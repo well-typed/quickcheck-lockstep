@@ -28,12 +28,9 @@ import Test.QuickCheck.StateModel (Var(..))
 -------------------------------------------------------------------------------}
 
 data EnvEntry f where
-  EnvEntry :: (Typeable a, Show (f a)) => Var a -> f a -> EnvEntry f
-
-deriving instance Show (EnvEntry f)
+  EnvEntry :: Typeable a => Var a -> f a -> EnvEntry f
 
 newtype EnvF f = EnvF [EnvEntry f]
-  deriving (Show)
 
 {-------------------------------------------------------------------------------
   Construction
@@ -42,16 +39,14 @@ newtype EnvF f = EnvF [EnvEntry f]
 empty :: EnvF f
 empty = EnvF []
 
-insert :: (Typeable a, Show (f a)) => Var a -> f a -> EnvF f -> EnvF f
+insert :: Typeable a => Var a -> f a -> EnvF f -> EnvF f
 insert x fa (EnvF env) = EnvF (EnvEntry x fa : env)
 
 {-------------------------------------------------------------------------------
   Query
 -------------------------------------------------------------------------------}
 
-lookup :: forall f a.
-     (Typeable f, Typeable a)
-  => Var a -> EnvF f -> Maybe (f a)
+lookup :: forall f a. (Typeable f, Typeable a) => Var a -> EnvF f -> Maybe (f a)
 lookup = \var (EnvF env) ->
     asum $ map (\(EnvEntry var' fa') -> aux var var' fa') env
   where
@@ -60,5 +55,5 @@ lookup = \var (EnvF env) ->
         guard (x == y)
         cast fa'
 
-keysOfType :: Typeable a => proxy a -> EnvF f -> [Var a]
-keysOfType _ (EnvF env) = mapMaybe (\(EnvEntry var _) -> cast var) env
+keysOfType :: Typeable a => EnvF f -> [Var a]
+keysOfType (EnvF env) = mapMaybe (\(EnvEntry var _) -> cast var) env

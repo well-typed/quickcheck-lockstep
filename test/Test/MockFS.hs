@@ -27,7 +27,7 @@ import System.Directory qualified as IO
 import System.IO qualified as IO
 import System.IO.Temp (createTempDirectory)
 import Test.Tasty (TestTree, testGroup)
-import Test.Tasty.HUnit (testCase)
+import Test.Tasty.HUnit
 import Test.Tasty.QuickCheck (testProperty)
 
 import Test.QuickCheck (Gen)
@@ -35,9 +35,9 @@ import Test.QuickCheck qualified as QC
 import Test.QuickCheck.StateModel
 
 import Test.QuickCheck.StateModel.Lockstep
-import Test.QuickCheck.StateModel.Lockstep qualified as Lockstep
-import Test.QuickCheck.StateModel.Lockstep.GVar (GVar, AnyGVar(..), Op(..), InterpretOp(..))
-import Test.QuickCheck.StateModel.Lockstep.GVar qualified as GVar
+import Test.QuickCheck.StateModel.Lockstep.Defaults qualified as Lockstep
+import Test.QuickCheck.StateModel.Lockstep.Op.SumProd
+import Test.QuickCheck.StateModel.Lockstep.Run qualified as Lockstep
 
 import Test.MockFS.Mock (Mock, Dir(..), File(..), Err)
 import Test.MockFS.Mock qualified as Mock
@@ -149,10 +149,10 @@ instance InLockstep FsState where
   --
 
   modelNextState :: forall a.
-       ModelLookUp FsState
-    -> LockstepAction FsState a
+       LockstepAction FsState a
+    -> ModelLookUp FsState
     -> FsState -> (FsVal a, FsState)
-  modelNextState lookUp action (FsState mock stats) =
+  modelNextState action lookUp (FsState mock stats) =
       auxStats $ runMock lookUp action mock
     where
       auxStats :: (FsVal a, Mock) -> (FsVal a, FsState)
@@ -162,6 +162,8 @@ instance InLockstep FsState where
   --
   -- Variables
   --
+
+  type ModelOp FsState = Op
 
   usedVars :: LockstepAction FsState a -> [AnyGVar (ModelOp FsState)]
   usedVars = \case
@@ -192,7 +194,7 @@ deriving instance Show (FsVal a)
 
 instance RunLockstep FsState RealMonad where
   observeReal ::
-       proxy RealMonad
+       Proxy RealMonad
     -> LockstepAction FsState a -> Realized RealMonad a -> FsObs a
   observeReal _ = \case
       MkDir{} -> OEither . bimap OId OId
@@ -258,7 +260,7 @@ arbitraryFsAction findVars = QC.oneof $ concat [
         ]
       where
         handle :: GVar Op (Either Err (IO.Handle, File)) -> GVar Op IO.Handle
-        handle = GVar.map (\op -> OpFst `OpComp` OpRight `OpComp` op)
+        handle = mapGVar (\op -> OpFst `OpComp` OpRight `OpComp` op)
 
     genDir :: Gen Dir
     genDir = do
@@ -280,7 +282,7 @@ shrinkFsAction findVars = \case
     Open _ ->
       [openTemp 100]
     Read (Right _) ->
-      [ Some $ Read (Left $ GVar.map (\op -> OpSnd `OpComp` OpRight `OpComp` op) v)
+      [ Some $ Read (Left $ mapGVar (\op -> OpSnd `OpComp` OpRight `OpComp` op) v)
       | v <- findVars (Proxy @((Either Err (IO.Handle, File))))
       ]
     _otherwise ->
@@ -321,9 +323,8 @@ runIO action lookUp = ReaderT $ \root -> aux root action
         Read f -> catchErr $
           IO.readFile (Mock.fileFP root $ either lookUp' id f)
       where
-        -- The precondition guarantees the safety of the 'fromJust'
-        lookUp' :: (Show x, Typeable x, Eq x) => FsVar x -> x
-        lookUp' var = GVar.lookUpEnv (Proxy @RealMonad) lookUp var
+        lookUp' :: FsVar x -> x
+        lookUp' = lookUpGVar (Proxy @RealMonad) lookUp
 
 catchErr :: forall a. IO a -> IO (Either Err a)
 catchErr act = catch (Right <$> act) handler
@@ -363,7 +364,7 @@ tagFsAction openedFiles = \case
 tests :: TestTree
 tests = testGroup "Test.MockFS" [
       testCase "labelledExamples" $
-        QC.labelledExamples $ tagActions (Proxy @FsState)
+        QC.labelledExamples $ Lockstep.tagActions (Proxy @FsState)
     , testProperty "propLockstep" $
         Lockstep.runActionsBracket (Proxy @FsState)
           (createTempDirectory tmpDir "QSM")

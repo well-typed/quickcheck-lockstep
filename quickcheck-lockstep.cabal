@@ -35,8 +35,15 @@ library
       lang
   exposed-modules:
       Test.QuickCheck.StateModel.Lockstep
+      Test.QuickCheck.StateModel.Lockstep.Defaults
+      Test.QuickCheck.StateModel.Lockstep.Op.Identity
+      Test.QuickCheck.StateModel.Lockstep.Op.SumProd
+      Test.QuickCheck.StateModel.Lockstep.Run
+  other-modules:
+      Test.QuickCheck.StateModel.Lockstep.API
       Test.QuickCheck.StateModel.Lockstep.EnvF
       Test.QuickCheck.StateModel.Lockstep.GVar
+      Test.QuickCheck.StateModel.Lockstep.Op
   build-depends:
       -- quickcheck-dynamic requires ghc 8.10 minimum
       base       >= 4.14 && < 4.15
@@ -62,8 +69,10 @@ test-suite test-quickcheck-lockstep
   other-modules:
       Test.MockFS
       Test.MockFS.Mock
+      Test.IORef
   default-extensions:
       DeriveGeneric
+      EmptyCase
   build-depends:
       -- Version bounds determined by main lib
       base
