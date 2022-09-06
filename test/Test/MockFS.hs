@@ -11,8 +11,6 @@
 {-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeFamilies          #-}
 
-{-# OPTIONS_GHC -Wall -Wredundant-constraints #-}
-
 module Test.MockFS (tests) where
 
 import Prelude hiding (init)
@@ -363,10 +361,9 @@ tagFsAction openedFiles = \case
 -------------------------------------------------------------------------------}
 
 tests :: TestTree
-tests = testGroup "UsingQD" [
+tests = testGroup "Test.MockFS" [
       testCase "labelledExamples" $
         QC.labelledExamples $ tagActions (Proxy @FsState)
-        -- Lockstep.labelledExamples
     , testProperty "propLockstep" $
         Lockstep.runActionsBracket (Proxy @FsState)
           (createTempDirectory tmpDir "QSM")

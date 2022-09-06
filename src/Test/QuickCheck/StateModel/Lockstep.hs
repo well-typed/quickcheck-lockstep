@@ -169,7 +169,7 @@ type ModelLookUp state = forall a.
           (Show a, Typeable a, Eq a)
        => ModelVar state a -> ModelValue state a
 
--- | Pick variable of the appropriate type
+-- | Find variables of the appropriate type
 --
 -- The type you pass must be the result type of (previously executed) actions.
 -- If you want to change the type of the variable, see
@@ -208,9 +208,9 @@ checkResponse p (Lockstep state env) action a =
     compareEquality real mock
       | real == mock = Nothing
       | otherwise    = Just $ concat [
-            "System under test returned "
+            "System under test returned: "
           , show real
-          , " but model returned "
+          , "\nbut model returned:         "
           , show mock
           ]
 
@@ -291,8 +291,8 @@ monitoring :: forall proxy m state a.
   -> Realized m a
   -> Property -> Property
 monitoring p (before, after) action _lookUp realResp =
-      maybe id QC.counterexample (checkResponse p before action realResp)
-    . QC.counterexample ("State: " ++ show after)
+      QC.counterexample ("State: " ++ show after)
+    . maybe id QC.counterexample (checkResponse p before action realResp)
     . QC.tabulate "Tags" tags
   where
     tags :: [String]
@@ -389,10 +389,9 @@ monadicBracketIO init cleanup =
 runActionsBracket ::
      RunLockstep state (ReaderT st IO)
   => proxy state
-  -> IO st                     -- ^ Initialisation
-  -> (st -> IO ())             -- ^ Cleanup
-  -> Actions (Lockstep state)
-  -> Property
+  -> IO st         -- ^ Initialisation
+  -> (st -> IO ()) -- ^ Cleanup
+  -> Actions (Lockstep state) -> Property
 runActionsBracket _ init cleanup actions =
     monadicBracketIO init cleanup $
       void $ Test.QuickCheck.StateModel.runActions actions
