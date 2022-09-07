@@ -7,8 +7,7 @@ import Data.IORef
 import Data.Map (Map)
 import Data.Map qualified as Map
 import Data.Proxy
-import Test.QuickCheck (Gen, Property)
-import Test.QuickCheck qualified as QC
+import Test.QuickCheck
 import Test.Tasty
 import Test.Tasty.QuickCheck (testProperty)
 
@@ -18,36 +17,36 @@ import Test.QuickCheck.StateModel.Lockstep.Defaults qualified as Lockstep
 import Test.QuickCheck.StateModel.Lockstep.Run qualified as Lockstep
 
 {-------------------------------------------------------------------------------
-  Model
+  Model "M"
 -------------------------------------------------------------------------------}
 
-type MockVar = Int
-type Model   = Map MockVar Int
+type MRef = Int
+type M    = Map MRef Int
 
-initModel :: Model
+initModel :: M
 initModel = Map.empty
 
-modelNew :: Model -> (MockVar, Model)
+modelNew :: M -> (MRef, M)
 modelNew m = (mockRef, Map.insert mockRef 0 m)
   where
-    mockRef :: MockVar
+    mockRef :: MRef
     mockRef = Map.size m
 
-modelIncr :: MockVar -> Model -> ((), Model)
-modelIncr v m = ((), Map.adjust (+ 1) v m)
+modelWrite :: MRef -> Int -> M -> ((), M)
+modelWrite v x m = ((), Map.insert v x m)
 
-modelRead :: MockVar -> Model -> (Int, Model)
+modelRead :: MRef -> M -> (Int, M)
 modelRead v m = (m Map.! v, m)
 
 {-------------------------------------------------------------------------------
   Instances
 -------------------------------------------------------------------------------}
 
-instance StateModel (Lockstep Model) where
-  data Action (Lockstep Model) a where
-    New  ::                               Action (Lockstep Model) (IORef Int)
-    Incr :: ModelVar Model (IORef Int) -> Action (Lockstep Model) ()
-    Read :: ModelVar Model (IORef Int) -> Action (Lockstep Model) Int
+instance StateModel (Lockstep M) where
+  data Action (Lockstep M) a where
+    New   ::                                  Action (Lockstep M) (IORef Int)
+    Write :: ModelVar M (IORef Int) -> Int -> Action (Lockstep M) ()
+    Read  :: ModelVar M (IORef Int) ->        Action (Lockstep M) Int
 
   initialState    = Lockstep.initialState initModel
   nextState       = Lockstep.nextState
@@ -55,97 +54,97 @@ instance StateModel (Lockstep Model) where
   arbitraryAction = Lockstep.arbitraryAction
   shrinkAction    = Lockstep.shrinkAction
 
-instance RunModel (Lockstep Model) IO where
+instance RunModel (Lockstep M) IO where
   perform       = \_state -> runIO
   postcondition = Lockstep.postcondition
   monitoring    = Lockstep.monitoring (Proxy @IO)
 
-instance InLockstep Model where
-  data ModelValue Model a where
-    MRef  :: MockVar -> ModelValue Model (IORef Int)
-    MUnit :: ()      -> ModelValue Model ()
-    MInt  :: Int     -> ModelValue Model Int
+instance InLockstep M where
+  data ModelValue M a where
+    MRef  :: MRef -> ModelValue M (IORef Int)
+    MUnit :: ()   -> ModelValue M ()
+    MInt  :: Int  -> ModelValue M Int
 
-  data Observable Model a where
-    ORef :: Observable Model (IORef Int)
-    OId  :: (Show a, Eq a) => a -> Observable Model a
+  data Observable M a where
+    ORef :: Observable M (IORef Int)
+    OId  :: (Show a, Eq a) => a -> Observable M a
 
   observeModel (MRef  _) = ORef
   observeModel (MUnit x) = OId x
   observeModel (MInt  x) = OId x
 
-  usedVars New      = []
-  usedVars (Incr v) = [SomeGVar v]
-  usedVars (Read v) = [SomeGVar v]
+  usedVars New         = []
+  usedVars (Write v _) = [SomeGVar v]
+  usedVars (Read  v)   = [SomeGVar v]
 
   modelNextState = runModel
 
-  arbitraryWithVars findVars _mock = QC.oneof $ concat [
+  arbitraryWithVars findVars _mock = oneof $ concat [
         withoutVars
       , case findVars (Proxy @(IORef Int)) of
           []   -> []
-          vars -> withVars (QC.elements vars)
+          vars -> withVars (elements vars)
       ]
     where
-      withoutVars :: [Gen (Any (LockstepAction Model))]
+      withoutVars :: [Gen (Any (LockstepAction M))]
       withoutVars = [return $ Some New]
 
       withVars ::
-           Gen (ModelVar Model (IORef Int))
-        -> [Gen (Any (LockstepAction Model))]
+           Gen (ModelVar M (IORef Int))
+        -> [Gen (Any (LockstepAction M))]
       withVars genVar = [
-            Some . Incr <$> genVar
-          , Some . Read <$> genVar
+            fmap Some $ Write <$> genVar <*> arbitrary
+          , fmap Some $ Read  <$> genVar
           ]
 
-instance RunLockstep Model IO where
+instance RunLockstep M IO where
   observeReal _ action result =
       case (action, result) of
-        (New    , _) -> ORef
-        (Incr{} , x) -> OId x
-        (Read{} , x) -> OId x
+        (New     , _) -> ORef
+        (Write{} , x) -> OId x
+        (Read{}  , x) -> OId x
 
-deriving instance Show (Action (Lockstep Model) a)
-deriving instance Show (Observable Model a)
-deriving instance Show (ModelValue Model a)
+deriving instance Show (Action (Lockstep M) a)
+deriving instance Show (Observable M a)
+deriving instance Show (ModelValue M a)
 
-deriving instance Eq (Action (Lockstep Model) a)
-deriving instance Eq (Observable Model a)
-deriving instance Eq (ModelValue Model a)
+deriving instance Eq (Action (Lockstep M) a)
+deriving instance Eq (Observable M a)
+deriving instance Eq (ModelValue M a)
 
 {-------------------------------------------------------------------------------
   Interpreters against the real system and against the model
 -------------------------------------------------------------------------------}
 
-runIO :: Action (Lockstep Model) a -> LookUp IO -> IO a
+runIO :: Action (Lockstep M) a -> LookUp IO -> IO a
 runIO action lookUp =
     case action of
-      New    -> newIORef 0
-      Incr v -> modifyIORef (lookUpRef v) (+ 1)
-      Read v -> readIORef   (lookUpRef v)
+      New       -> newIORef 0
+      Write v x -> writeIORef (lookUpRef v) x
+      Read  v   -> readIORef  (lookUpRef v)
   where
-    lookUpRef :: ModelVar Model (IORef Int) -> IORef Int
+    lookUpRef :: ModelVar M (IORef Int) -> IORef Int
     lookUpRef = lookUpGVar (Proxy @IO) lookUp
 
 runModel ::
-     Action (Lockstep Model) a
-  -> ModelLookUp Model
-  -> Model -> (ModelValue Model a, Model)
+     Action (Lockstep M) a
+  -> ModelLookUp M
+  -> M -> (ModelValue M a, M)
 runModel action lookUp =
     case action of
-      New    -> first MRef  . modelNew
-      Incr v -> first MUnit . modelIncr (lookUpRef v)
-      Read v -> first MInt  . modelRead (lookUpRef v)
+      New       -> first MRef  . modelNew
+      Write v x -> first MUnit . modelWrite (lookUpRef v) x
+      Read  v   -> first MInt  . modelRead  (lookUpRef v)
   where
-    lookUpRef :: ModelVar Model (IORef Int) -> MockVar
+    lookUpRef :: ModelVar M (IORef Int) -> MRef
     lookUpRef var = case lookUp var of MRef r -> r
 
 {-------------------------------------------------------------------------------
   Top-level tests
 -------------------------------------------------------------------------------}
 
-propIORef :: Actions (Lockstep Model) -> Property
-propIORef = Lockstep.runActions (Proxy @Model)
+propIORef :: Actions (Lockstep M) -> Property
+propIORef = Lockstep.runActions (Proxy @M)
 
 tests :: TestTree
 tests = testGroup "Test.IORef" [
