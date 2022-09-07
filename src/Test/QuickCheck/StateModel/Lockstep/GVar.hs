@@ -39,7 +39,7 @@ data GVar op f where
   GVar :: Typeable x => Var x -> op x y -> GVar op y
 
 data AnyGVar op where
-  SomeGVar :: Typeable y => GVar op y -> AnyGVar op
+  SomeGVar :: GVar op y -> AnyGVar op
 
 deriving instance (forall x. Show (op x a)) => Show (GVar op a)
 
