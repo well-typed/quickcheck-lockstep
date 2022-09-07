@@ -7,7 +7,7 @@ import Data.IORef
 import Data.Map (Map)
 import Data.Map qualified as Map
 import Data.Proxy
-import Test.QuickCheck (Gen)
+import Test.QuickCheck (Gen, Property)
 import Test.QuickCheck qualified as QC
 import Test.Tasty
 import Test.Tasty.QuickCheck (testProperty)
@@ -43,16 +43,11 @@ modelRead v m = (m Map.! v, m)
   Instances
 -------------------------------------------------------------------------------}
 
-type TestState  = Lockstep Model
-type TestVar    = ModelVar Model
-type TestValue  = ModelValue Model
-type TestAction = Action TestState
-
-instance StateModel TestState where
-  data Action TestState a where
-    New  ::                        TestAction (IORef Int)
-    Incr :: TestVar (IORef Int) -> TestAction ()
-    Read :: TestVar (IORef Int) -> TestAction Int
+instance StateModel (Lockstep Model) where
+  data Action (Lockstep Model) a where
+    New  ::                               Action (Lockstep Model) (IORef Int)
+    Incr :: ModelVar Model (IORef Int) -> Action (Lockstep Model) ()
+    Read :: ModelVar Model (IORef Int) -> Action (Lockstep Model) Int
 
   initialState    = Lockstep.initialState initModel
   nextState       = Lockstep.nextState
@@ -60,7 +55,7 @@ instance StateModel TestState where
   arbitraryAction = Lockstep.arbitraryAction
   shrinkAction    = Lockstep.shrinkAction
 
-instance RunModel TestState IO where
+instance RunModel (Lockstep Model) IO where
   perform       = \_state -> runIO
   postcondition = Lockstep.postcondition
   monitoring    = Lockstep.monitoring (Proxy @IO)
@@ -106,15 +101,15 @@ instance InLockstep Model where
 instance RunLockstep Model IO where
   observeReal _ action result =
       case (action, result) of
-        (New    , _x) -> ORef
-        (Incr{} ,  x) -> OId x
-        (Read{} ,  x) -> OId x
+        (New    , _) -> ORef
+        (Incr{} , x) -> OId x
+        (Read{} , x) -> OId x
 
-deriving instance Show (TestAction a)
+deriving instance Show (Action (Lockstep Model) a)
 deriving instance Show (Observable Model a)
 deriving instance Show (ModelValue Model a)
 
-deriving instance Eq (TestAction a)
+deriving instance Eq (Action (Lockstep Model) a)
 deriving instance Eq (Observable Model a)
 deriving instance Eq (ModelValue Model a)
 
@@ -122,34 +117,37 @@ deriving instance Eq (ModelValue Model a)
   Interpreters against the real system and against the model
 -------------------------------------------------------------------------------}
 
-runIO :: TestAction a -> LookUp IO -> IO a
+runIO :: Action (Lockstep Model) a -> LookUp IO -> IO a
 runIO action lookUp =
     case action of
       New    -> newIORef 0
       Incr v -> modifyIORef (lookUpRef v) (+ 1)
       Read v -> readIORef   (lookUpRef v)
   where
-    lookUpRef :: TestVar (IORef Int) -> IORef Int
+    lookUpRef :: ModelVar Model (IORef Int) -> IORef Int
     lookUpRef = lookUpGVar (Proxy @IO) lookUp
 
 runModel ::
-     TestAction a
+     Action (Lockstep Model) a
   -> ModelLookUp Model
-  -> Model -> (TestValue a, Model)
+  -> Model -> (ModelValue Model a, Model)
 runModel action lookUp =
     case action of
       New    -> first MRef  . modelNew
       Incr v -> first MUnit . modelIncr (lookUpRef v)
       Read v -> first MInt  . modelRead (lookUpRef v)
   where
-    lookUpRef :: TestVar (IORef Int) -> MockVar
+    lookUpRef :: ModelVar Model (IORef Int) -> MockVar
     lookUpRef var = case lookUp var of MRef r -> r
 
 {-------------------------------------------------------------------------------
   Top-level tests
 -------------------------------------------------------------------------------}
 
+propIORef :: Actions (Lockstep Model) -> Property
+propIORef = Lockstep.runActions (Proxy @Model)
+
 tests :: TestTree
 tests = testGroup "Test.IORef" [
-      testProperty "runActions" $ Lockstep.runActions (Proxy @Model)
+      testProperty "runActions" propIORef
     ]
