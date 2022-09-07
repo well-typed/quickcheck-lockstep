@@ -2,6 +2,7 @@
 
 module Test.IORef (tests) where
 
+import Control.Monad.Reader
 import Data.Bifunctor
 import Data.IORef
 import Data.Map (Map)
@@ -32,8 +33,8 @@ modelNew m = (mockRef, Map.insert mockRef 0 m)
     mockRef :: MRef
     mockRef = Map.size m
 
-modelWrite :: MRef -> Int -> M -> ((), M)
-modelWrite v x m = ((), Map.insert v x m)
+modelWrite :: MRef -> Int -> M -> (Int, M)
+modelWrite v x m = (x, Map.insert v x m)
 
 modelRead :: MRef -> M -> (Int, M)
 modelRead v m = (m Map.! v, m)
@@ -48,10 +49,13 @@ instance StateModel (Lockstep M) where
     New :: Action (Lockstep M) (IORef Int)
 
     -- | Write value to IORef
+    --
+    -- The value is specified either as a concrete value or by reference
+    -- to a previous write.
     Write ::
          ModelVar M (IORef Int)
-      -> Int
-      -> Action (Lockstep M) ()
+      -> Either Int (ModelVar M Int)
+      -> Action (Lockstep M) Int
 
     -- | Read IORef
     Read ::
@@ -64,15 +68,14 @@ instance StateModel (Lockstep M) where
   arbitraryAction = Lockstep.arbitraryAction
   shrinkAction    = Lockstep.shrinkAction
 
-instance RunModel (Lockstep M) IO where
+instance RunModel (Lockstep M) RealMonad where
   perform       = \_state -> runIO
   postcondition = Lockstep.postcondition
-  monitoring    = Lockstep.monitoring (Proxy @IO)
+  monitoring    = Lockstep.monitoring (Proxy @RealMonad)
 
 instance InLockstep M where
   data ModelValue M a where
     MRef  :: MRef -> ModelValue M (IORef Int)
-    MUnit :: ()   -> ModelValue M ()
     MInt  :: Int  -> ModelValue M Int
 
   data Observable M a where
@@ -80,12 +83,12 @@ instance InLockstep M where
     OId  :: (Show a, Eq a) => a -> Observable M a
 
   observeModel (MRef  _) = ORef
-  observeModel (MUnit x) = OId x
   observeModel (MInt  x) = OId x
 
-  usedVars New         = []
-  usedVars (Write v _) = [SomeGVar v]
-  usedVars (Read  v)   = [SomeGVar v]
+  usedVars New                  = []
+  usedVars (Write v (Left _))   = [SomeGVar v]
+  usedVars (Write v (Right v')) = [SomeGVar v, SomeGVar v']
+  usedVars (Read  v)            = [SomeGVar v]
 
   modelNextState = runModel
 
@@ -103,11 +106,20 @@ instance InLockstep M where
            Gen (ModelVar M (IORef Int))
         -> [Gen (Any (LockstepAction M))]
       withVars genVar = [
-            fmap Some $ Write <$> genVar <*> arbitrary
+            fmap Some $ Write <$> genVar <*> (Left <$> arbitrary)
           , fmap Some $ Read  <$> genVar
           ]
 
-instance RunLockstep M IO where
+  shrinkWithVars findVars _mock = \case
+      New               -> []
+      Write v (Left x)  -> concat [
+                               Some . Write v . Left  <$> shrink x
+                             , Some . Write v . Right <$> findVars (Proxy @Int)
+                             ]
+      Write _ (Right _) -> []
+      Read  _           -> []
+
+instance RunLockstep M RealMonad where
   observeReal _ action result =
       case (action, result) of
         (New     , _) -> ORef
@@ -126,15 +138,33 @@ deriving instance Eq (ModelValue M a)
   Interpreters against the real system and against the model
 -------------------------------------------------------------------------------}
 
-runIO :: Action (Lockstep M) a -> LookUp IO -> IO a
-runIO action lookUp =
+type BrokenRef = (IORef Int, Int)
+type RealMonad = ReaderT (IORef (Maybe BrokenRef)) IO
+
+runIO :: Action (Lockstep M) a -> LookUp RealMonad -> RealMonad a
+runIO action lookUp = ReaderT $ \brokenRef ->
     case action of
       New       -> newIORef 0
-      Write v x -> writeIORef (lookUpRef v) x
-      Read  v   -> readIORef  (lookUpRef v)
+      Write v x -> brokenWrite brokenRef (lookUpRef v) (lookUpInt x)
+      Read  v   -> readIORef (lookUpRef v)
   where
     lookUpRef :: ModelVar M (IORef Int) -> IORef Int
-    lookUpRef = lookUpGVar (Proxy @IO) lookUp
+    lookUpRef = lookUpGVar (Proxy @RealMonad) lookUp
+
+    lookUpInt :: Either Int (ModelVar M Int) -> Int
+    lookUpInt (Left  x) = x
+    lookUpInt (Right v) = lookUpGVar (Proxy @RealMonad) lookUp v
+
+brokenWrite :: IORef (Maybe BrokenRef) -> IORef Int -> Int -> IO Int
+brokenWrite brokenRef v x = do
+    broken <- readIORef brokenRef
+    case broken of
+      Just (v', x') | v == v', x == x' ->
+        writeIORef v 0
+      _otherwise -> do
+        writeIORef v x
+        writeIORef brokenRef (Just (v, x))
+    return x
 
 runModel ::
      Action (Lockstep M) a
@@ -142,19 +172,26 @@ runModel ::
   -> M -> (ModelValue M a, M)
 runModel action lookUp =
     case action of
-      New       -> first MRef  . modelNew
-      Write v x -> first MUnit . modelWrite (lookUpRef v) x
-      Read  v   -> first MInt  . modelRead  (lookUpRef v)
+      New       -> first MRef . modelNew
+      Write v x -> first MInt . modelWrite (lookUpRef v) (lookUpInt x)
+      Read  v   -> first MInt . modelRead  (lookUpRef v)
   where
     lookUpRef :: ModelVar M (IORef Int) -> MRef
     lookUpRef var = case lookUp var of MRef r -> r
+
+    lookUpInt :: Either Int (ModelVar M Int) -> Int
+    lookUpInt (Left  x) = x
+    lookUpInt (Right v) = case lookUp v of MInt x -> x
 
 {-------------------------------------------------------------------------------
   Top-level tests
 -------------------------------------------------------------------------------}
 
 propIORef :: Actions (Lockstep M) -> Property
-propIORef = Lockstep.runActions (Proxy @M)
+propIORef = Lockstep.runActionsBracket (Proxy @M) initBroken (\_ -> return ())
+  where
+    initBroken :: IO (IORef (Maybe BrokenRef))
+    initBroken = newIORef Nothing
 
 tests :: TestTree
 tests = testGroup "Test.IORef" [
