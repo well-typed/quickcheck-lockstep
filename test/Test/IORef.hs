@@ -44,9 +44,19 @@ modelRead v m = (m Map.! v, m)
 
 instance StateModel (Lockstep M) where
   data Action (Lockstep M) a where
-    New   ::                                  Action (Lockstep M) (IORef Int)
-    Write :: ModelVar M (IORef Int) -> Int -> Action (Lockstep M) ()
-    Read  :: ModelVar M (IORef Int) ->        Action (Lockstep M) Int
+    -- | Create new IORef
+    New :: Action (Lockstep M) (IORef Int)
+
+    -- | Write value to IORef
+    Write ::
+         ModelVar M (IORef Int)
+      -> Int
+      -> Action (Lockstep M) ()
+
+    -- | Read IORef
+    Read ::
+         ModelVar M (IORef Int)
+      -> Action (Lockstep M) Int
 
   initialState    = Lockstep.initialState initModel
   nextState       = Lockstep.nextState
