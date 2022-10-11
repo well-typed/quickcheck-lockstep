@@ -1,5 +1,8 @@
 -- | Lockstep-style testing using @quickcheck-dynamic@
 --
+-- See <https://well-typed.com/blog/2022/09/lockstep-with-quickcheck-dynamic/>
+-- for a tutorial.
+--
 -- This module is intended for unqualified import alongside imports of
 -- "Test.QuickCheck.StateModel".
 --

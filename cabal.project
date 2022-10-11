@@ -3,9 +3,3 @@ packages: .
 package quickcheck-lockstep
   tests: True
 
-source-repository-package
-  type: git
-  location: https://github.com/input-output-hk/quickcheck-dynamic
-  tag: cf2d8caf783167c11c0de64c273a0021d6b5f399
-  subdir: quickcheck-dynamic
-
