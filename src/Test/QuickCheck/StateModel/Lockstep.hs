@@ -13,6 +13,7 @@
 module Test.QuickCheck.StateModel.Lockstep (
     -- * Main abstraction
     Lockstep -- opaque
+  , getModel
   , InLockstep(..)
   , RunLockstep(..)
     -- ** Convenience aliases
