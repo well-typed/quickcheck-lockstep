@@ -94,16 +94,21 @@ runActions _ actions = monadicIO $ void $ StateModel.runActions actions
 
 -- | Convenience runner with support for state initialization
 --
--- This is less general than 'Test.QuickCheck.StateModel.runActions', but
--- will be useful in many scenarios.
+-- This is less general than 'Test.QuickCheck.StateModel.runActions', but will
+-- be useful in many scenarios.
+--
+-- For most lockstep-style tests, a suitable monad to run the tests in is
+-- @'ReaderT' r 'IO'@. In this case, using @'runReaderT'@ as the runner argument
+-- is a reasonable choice.
 runActionsBracket ::
-     RunLockstep state (ReaderT st IO)
+     RunLockstep state m
   => Proxy state
   -> IO st         -- ^ Initialisation
   -> (st -> IO ()) -- ^ Cleanup
+  -> (m Property -> st -> IO Property) -- ^ Runner
   -> Actions (Lockstep state) -> Property
-runActionsBracket _ init cleanup actions =
-    monadicBracketIO init cleanup $
+runActionsBracket _ init cleanup runner actions =
+    monadicBracketIO init cleanup runner $
       void $ StateModel.runActions actions
 
 {-------------------------------------------------------------------------------
@@ -114,22 +119,24 @@ ioPropertyBracket ::
      Testable a
   => IO st
   -> (st -> IO ())
-  -> ReaderT st IO a
+  -> (m a -> st -> IO a)
+  -> m a
   -> Property
-ioPropertyBracket init cleanup (ReaderT prop) = do
+ioPropertyBracket init cleanup runner prop =
     QC.ioProperty $ mask $ \restore -> do
       st <- init
-      a  <- restore (prop st) `onException` cleanup st
+      a <- restore (runner prop st) `onException` cleanup st
       cleanup st
       return a
 
 -- | Variation on 'monadicIO' that allows for state initialisation/cleanup
-monadicBracketIO :: forall st a.
-     Testable a
+monadicBracketIO :: forall st a m.
+     (Monad m, Testable a)
   => IO st
   -> (st -> IO ())
-  -> (PropertyM (ReaderT st IO) a)
+  -> (m Property -> st -> IO Property)
+  -> PropertyM m a
   -> Property
-monadicBracketIO init cleanup =
-    monadic (ioPropertyBracket init cleanup)
+monadicBracketIO init cleanup runner =
+    monadic (ioPropertyBracket init cleanup runner)
 
