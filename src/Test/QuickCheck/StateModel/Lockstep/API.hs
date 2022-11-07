@@ -4,6 +4,7 @@
 module Test.QuickCheck.StateModel.Lockstep.API (
     -- * State
     Lockstep(..)
+  , getModel
     -- * Main abstraction
   , InLockstep(..)
   , RunLockstep(..)
@@ -54,6 +55,10 @@ data Lockstep state = Lockstep {
 -- | The 'Show' instance does not show the internal environment
 instance Show state => Show (Lockstep state) where
   show = show . lockstepModel
+
+-- | Inspect the model that resides inside the Lockstep state
+getModel :: Lockstep state -> state
+getModel = lockstepModel
 
 {-------------------------------------------------------------------------------
   Main lockstep abstraction
