@@ -25,7 +25,7 @@ import Data.Typeable
 import System.Directory (removeDirectoryRecursive)
 import System.Directory qualified as IO
 import System.IO qualified as IO
-import System.IO.Temp (createTempDirectory)
+import System.IO.Temp (createTempDirectory, getCanonicalTemporaryDirectory)
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit
 import Test.Tasty.QuickCheck (testProperty)
@@ -367,11 +367,12 @@ tests = testGroup "Test.MockFS" [
         QC.labelledExamples $ Lockstep.tagActions (Proxy @FsState)
     , testProperty "propLockstep" $
         Lockstep.runActionsBracket (Proxy @FsState)
-          (createTempDirectory tmpDir "QSM")
+          (createSystemTempDirectory "QSM")
           removeDirectoryRecursive
           runReaderT
     ]
-  where
-    -- TODO: tmpDir should really be a parameter to the test suite
-    tmpDir :: FilePath
-    tmpDir = "./tmp"
+
+createSystemTempDirectory :: [Char] -> IO FilePath
+createSystemTempDirectory prefix = do
+    systemTempDir <- getCanonicalTemporaryDirectory
+    createTempDirectory systemTempDir prefix
