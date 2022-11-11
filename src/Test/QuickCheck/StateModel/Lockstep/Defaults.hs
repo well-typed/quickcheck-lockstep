@@ -17,6 +17,7 @@ module Test.QuickCheck.StateModel.Lockstep.Defaults (
 
 import Prelude hiding (init)
 
+import Data.Constraint (Dict(..))
 import Data.Maybe (isNothing)
 import Data.Typeable
 
@@ -137,19 +138,32 @@ checkResponse :: forall m state a.
   => Proxy m
   -> Lockstep state -> LockstepAction state a -> Realized m a -> Maybe String
 checkResponse p (Lockstep state env) action a =
-    compareEquality (observeReal p action a) (observeModel modelResp)
+    compareEquality
+      (a         , observeReal p action a)
+      (modelResp , observeModel modelResp)
   where
     modelResp :: ModelValue state a
     modelResp = fst $ modelNextState action (lookUpEnvF env) state
 
-    compareEquality ::  Observable state a -> Observable state a -> Maybe String
-    compareEquality real mock
-      | real == mock = Nothing
-      | otherwise    = Just $ concat [
+    compareEquality ::
+         (Realized m a, Observable state a)
+      -> (ModelValue state a, Observable state a) -> Maybe String
+    compareEquality (realResp, obsRealResp) (mockResp, obsMockResp)
+      | obsRealResp == obsMockResp = Nothing
+      | otherwise                  = Just $ concat [
             "System under test returned: "
-          , show real
+          , case showRealResponse (Proxy @m) action of
+              Nothing   -> show obsRealResp
+              Just Dict -> concat [
+                  show obsRealResp
+                , " ("
+                , show realResp
+                , ")"
+                ]
           , "\nbut model returned:         "
-          , show mock
+          , show obsMockResp
+          , " ("
+          , show mockResp
+          , ")"
           ]
-
 

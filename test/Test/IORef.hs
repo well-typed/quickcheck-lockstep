@@ -6,6 +6,7 @@ module Test.IORef (tests) where
 
 import Control.Monad.Reader
 import Data.Bifunctor
+import Data.Constraint (Dict(..))
 import Data.IORef
 import Data.Map (Map)
 import Data.Map qualified as Map
@@ -163,6 +164,11 @@ instance RunLockstep M RealMonad where
         (New     , _) -> ORef
         (Write{} , x) -> OId x
         (Read{}  , x) -> OId x
+
+  showRealResponse _ = \case
+    New{}   -> Nothing
+    Write{} -> Just Dict
+    Read{}  -> Just Dict
 
 deriving instance Show (Action (Lockstep M) a)
 deriving instance Show (Observable M a)

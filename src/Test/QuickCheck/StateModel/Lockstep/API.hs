@@ -15,6 +15,7 @@ module Test.QuickCheck.StateModel.Lockstep.API (
   , ModelVar
   ) where
 
+import Data.Constraint (Dict(..))
 import Data.Kind
 import Data.Typeable
 
@@ -152,6 +153,16 @@ class ( InLockstep state
   observeReal ::
        Proxy m
     -> LockstepAction state a -> Realized m a -> Observable state a
+
+  -- | Show responses from the real system
+  --
+  -- This method does not need to be implemented, but if it is, counter-examples
+  -- can include the real response in addition to the observable response.
+  showRealResponse ::
+       Proxy m
+    -> LockstepAction state a
+    -> Maybe (Dict (Show (Realized m a)))
+  showRealResponse _ _ = Nothing
 
 {-------------------------------------------------------------------------------
   Convenience aliases
