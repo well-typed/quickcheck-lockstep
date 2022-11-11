@@ -34,10 +34,10 @@ data M = M {
       -- | Value of every var
       mValues :: Map MRef Int
 
-      -- | How many writes did we do for each var?
+      -- | Often did we write each value to each var?
       --
       -- This is used for tagging.
-    , mWrites :: Map MRef Int
+    , mWrites :: Map (MRef, Int) Int
     }
   deriving (Show)
 
@@ -51,7 +51,7 @@ modelNew :: M -> (MRef, M)
 modelNew M{..} = (
       mockRef
     , M { mValues = Map.insert mockRef 0 mValues
-        , mWrites = Map.insert mockRef 0 mWrites
+        , mWrites = mWrites
         }
     )
   where
@@ -62,9 +62,13 @@ modelWrite :: MRef -> Int -> M -> (Int, M)
 modelWrite v x M{..} = (
       x
     , M { mValues = Map.insert v x mValues
-        , mWrites = Map.adjust succ v mWrites
+        , mWrites = Map.alter recordWrite (v, x) mWrites
         }
     )
+  where
+    recordWrite :: Maybe Int -> Maybe Int
+    recordWrite Nothing  = Just 1 -- First write
+    recordWrite (Just n) = Just (n + 1)
 
 modelRead :: MRef -> M -> (Int, M)
 modelRead v m@M{..} = (mValues Map.! v, m)
@@ -191,8 +195,10 @@ instance Arbitrary Buggy where
   shrink Buggy    = [NotBuggy]
   shrink NotBuggy = []
 
-type BrokenRef = (IORef Int, Int)
-type RealMonad = ReaderT (Buggy, IORef (Maybe BrokenRef)) IO
+-- | We trigger a bug if we write the /same/ value to the /same/ variable
+type BrokenRef = [(IORef Int, Int)]
+
+type RealMonad = ReaderT (Buggy, IORef BrokenRef) IO
 
 runIO :: Action (Lockstep M) a -> LookUp RealMonad -> RealMonad a
 runIO action lookUp = ReaderT $ \(buggy, brokenRef) ->
@@ -209,16 +215,15 @@ runIO action lookUp = ReaderT $ \(buggy, brokenRef) ->
     lookUpInt (Right v) = lookUpGVar (Proxy @RealMonad) lookUp v
 
 -- | The second write to the same variable will be broken
-brokenWrite :: Buggy -> IORef (Maybe BrokenRef) -> IORef Int -> Int -> IO Int
+brokenWrite :: Buggy -> IORef BrokenRef -> IORef Int -> Int -> IO Int
 brokenWrite NotBuggy _         v x = writeIORef v x >> return x
 brokenWrite Buggy    brokenRef v x = do
     broken <- readIORef brokenRef
-    case broken of
-      Just (v', x') | v == v', x == x' ->
-        writeIORef v 123456789
-      _otherwise -> do
-        writeIORef v x
-        writeIORef brokenRef (Just (v, x))
+    if (v, x) `elem` broken then
+      writeIORef v 123456789
+    else
+      writeIORef v x
+    modifyIORef brokenRef ((v, x) :)
     return x
 
 runModel ::
@@ -245,15 +250,20 @@ runModel action lookUp =
 propIORef :: Buggy -> Actions (Lockstep M) -> Property
 propIORef buggy actions =
       (if triggersBug then expectFailure  else id)
-    $ Lockstep.runActionsBracket (Proxy @M) initBroken (\_ -> return ()) actions
+    $ Lockstep.runActionsBracket
+        (Proxy @M)
+        initBroken
+        (\_ -> return ())
+        runReaderT
+        actions
   where
     triggersBug :: Bool
     triggersBug =
            buggy == Buggy
         && "WriteSameVarTwice" `elem` labelActions actions
 
-    initBroken :: IO (Buggy, IORef (Maybe BrokenRef))
-    initBroken = (buggy,) <$> newIORef Nothing
+    initBroken :: IO (Buggy, IORef BrokenRef)
+    initBroken = (buggy,) <$> newIORef []
 
 tests :: TestTree
 tests = testGroup "Test.IORef" [

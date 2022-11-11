@@ -1,6 +1,6 @@
 cabal-version:      2.4
 name:               quickcheck-lockstep
-version:            0.1.0
+version:            0.2.0
 license:            BSD-3-Clause
 license-file:       LICENSE
 author:             Edsko de Vries
@@ -58,8 +58,8 @@ library
       Test.QuickCheck.StateModel.Lockstep.Op
   build-depends:
       -- quickcheck-dynamic requires ghc 8.10 minimum
-      base               >= 4.14 && < 4.15
-    , constraints
+      base               >= 4.14 && < 4.18
+    , constraints        >= 0.13 && < 0.14
     , mtl                >= 2.2  && < 2.3
     , containers         >= 0.6  && < 0.7
     , QuickCheck         >= 2.14 && < 2.15

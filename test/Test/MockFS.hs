@@ -369,6 +369,7 @@ tests = testGroup "Test.MockFS" [
         Lockstep.runActionsBracket (Proxy @FsState)
           (createTempDirectory tmpDir "QSM")
           removeDirectoryRecursive
+          runReaderT
     ]
   where
     -- TODO: tmpDir should really be a parameter to the test suite
