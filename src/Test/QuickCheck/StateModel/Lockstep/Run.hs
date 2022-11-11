@@ -6,6 +6,7 @@
 module Test.QuickCheck.StateModel.Lockstep.Run (
     -- * Finding labelled examples
     tagActions
+  , labelActions
     -- * Run tests
   , runActions
   , runActionsBracket
@@ -51,14 +52,17 @@ import Test.QuickCheck.StateModel.Lockstep.GVar
 -- executed against the model /only/.
 tagActions :: forall state.
      InLockstep state
-  => Proxy state
-  -> Actions (Lockstep state)
-  -> Property
-tagActions _p (Actions steps) =
+  => Proxy state -> Actions (Lockstep state) -> Property
+tagActions _p actions = QC.label ("Tags: " ++ show (labelActions actions)) True
+
+labelActions :: forall state.
+     InLockstep state
+  => Actions (Lockstep state) -> [String]
+labelActions (Actions steps) =
     go Set.empty Test.QuickCheck.StateModel.initialState steps
   where
-    go :: Set String -> Lockstep state -> [Step (Lockstep state)] -> Property
-    go tags _st []            = QC.label ("Tags: " ++ show (Set.toList tags)) True
+    go :: Set String -> Lockstep state -> [Step (Lockstep state)] -> [String]
+    go tags _st []            = Set.toList tags
     go tags  st ((v:=a) : ss) = go' tags st v a ss
 
     go' :: forall a.
@@ -68,7 +72,7 @@ tagActions _p (Actions steps) =
       -> Var a                      -- variable for the result of this action
       -> Action (Lockstep state) a  -- action to execute
       -> [Step (Lockstep state)]    -- remaining steps to execute
-      -> Property
+      -> [String]
     go' tags (Lockstep before env) var action ss =
         go (Set.union (Set.fromList tags') tags) st' ss
       where

@@ -1,3 +1,5 @@
+{-# LANGUAGE RecordWildCards #-}
+
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 module Test.IORef (tests) where
@@ -10,34 +12,61 @@ import Data.Map qualified as Map
 import Data.Proxy
 import Test.QuickCheck
 import Test.Tasty
+import Test.Tasty.HUnit
 import Test.Tasty.QuickCheck (testProperty)
+
+import Test.QuickCheck qualified as QC
 
 import Test.QuickCheck.StateModel
 import Test.QuickCheck.StateModel.Lockstep
 import Test.QuickCheck.StateModel.Lockstep.Defaults qualified as Lockstep
 import Test.QuickCheck.StateModel.Lockstep.Run qualified as Lockstep
+import Test.QuickCheck.StateModel.Lockstep.Run (labelActions)
 
 {-------------------------------------------------------------------------------
   Model "M"
 -------------------------------------------------------------------------------}
 
 type MRef = Int
-type M    = Map MRef Int
+
+data M = M {
+      -- | Value of every var
+      mValues :: Map MRef Int
+
+      -- | How many writes did we do for each var?
+      --
+      -- This is used for tagging.
+    , mWrites :: Map MRef Int
+    }
+  deriving (Show)
 
 initModel :: M
-initModel = Map.empty
+initModel = M {
+      mValues = Map.empty
+    , mWrites = Map.empty
+    }
 
 modelNew :: M -> (MRef, M)
-modelNew m = (mockRef, Map.insert mockRef 0 m)
+modelNew M{..} = (
+      mockRef
+    , M { mValues = Map.insert mockRef 0 mValues
+        , mWrites = Map.insert mockRef 0 mWrites
+        }
+    )
   where
     mockRef :: MRef
-    mockRef = Map.size m
+    mockRef = Map.size mValues
 
 modelWrite :: MRef -> Int -> M -> (Int, M)
-modelWrite v x m = (x, Map.insert v x m)
+modelWrite v x M{..} = (
+      x
+    , M { mValues = Map.insert v x mValues
+        , mWrites = Map.adjust succ v mWrites
+        }
+    )
 
 modelRead :: MRef -> M -> (Int, M)
-modelRead v m = (m Map.! v, m)
+modelRead v m@M{..} = (mValues Map.! v, m)
 
 {-------------------------------------------------------------------------------
   Instances
@@ -106,7 +135,7 @@ instance InLockstep M where
            Gen (ModelVar M (IORef Int))
         -> [Gen (Any (LockstepAction M))]
       withVars genVar = [
-            fmap Some $ Write <$> genVar <*> (Left <$> arbitrary)
+            fmap Some $ Write <$> genVar <*> (Left <$> choose (0, 10))
           , fmap Some $ Read  <$> genVar
           ]
 
@@ -118,6 +147,15 @@ instance InLockstep M where
                              ]
       Write _ (Right _) -> []
       Read  _           -> []
+
+  tagStep (_stBefore, stAfter) _action _result = concat [
+        [ "WriteSameVarTwice"
+        | not
+        . Map.null
+        . Map.filter (\numWrites -> numWrites > 1)
+        $ mWrites stAfter
+        ]
+      ]
 
 instance RunLockstep M RealMonad where
   observeReal _ action result =
@@ -138,14 +176,23 @@ deriving instance Eq (ModelValue M a)
   Interpreters against the real system and against the model
 -------------------------------------------------------------------------------}
 
+data Buggy = Buggy | NotBuggy
+  deriving (Show, Eq)
+
+instance Arbitrary Buggy where
+  arbitrary = elements [Buggy, NotBuggy]
+
+  shrink Buggy    = [NotBuggy]
+  shrink NotBuggy = []
+
 type BrokenRef = (IORef Int, Int)
-type RealMonad = ReaderT (IORef (Maybe BrokenRef)) IO
+type RealMonad = ReaderT (Buggy, IORef (Maybe BrokenRef)) IO
 
 runIO :: Action (Lockstep M) a -> LookUp RealMonad -> RealMonad a
-runIO action lookUp = ReaderT $ \brokenRef ->
+runIO action lookUp = ReaderT $ \(buggy, brokenRef) ->
     case action of
       New       -> newIORef 0
-      Write v x -> brokenWrite brokenRef (lookUpRef v) (lookUpInt x)
+      Write v x -> brokenWrite buggy brokenRef (lookUpRef v) (lookUpInt x)
       Read  v   -> readIORef (lookUpRef v)
   where
     lookUpRef :: ModelVar M (IORef Int) -> IORef Int
@@ -155,12 +202,14 @@ runIO action lookUp = ReaderT $ \brokenRef ->
     lookUpInt (Left  x) = x
     lookUpInt (Right v) = lookUpGVar (Proxy @RealMonad) lookUp v
 
-brokenWrite :: IORef (Maybe BrokenRef) -> IORef Int -> Int -> IO Int
-brokenWrite brokenRef v x = do
+-- | The second write to the same variable will be broken
+brokenWrite :: Buggy -> IORef (Maybe BrokenRef) -> IORef Int -> Int -> IO Int
+brokenWrite NotBuggy _         v x = writeIORef v x >> return x
+brokenWrite Buggy    brokenRef v x = do
     broken <- readIORef brokenRef
     case broken of
       Just (v', x') | v == v', x == x' ->
-        writeIORef v 0
+        writeIORef v 123456789
       _otherwise -> do
         writeIORef v x
         writeIORef brokenRef (Just (v, x))
@@ -187,13 +236,22 @@ runModel action lookUp =
   Top-level tests
 -------------------------------------------------------------------------------}
 
-propIORef :: Actions (Lockstep M) -> Property
-propIORef = Lockstep.runActionsBracket (Proxy @M) initBroken (\_ -> return ())
+propIORef :: Buggy -> Actions (Lockstep M) -> Property
+propIORef buggy actions =
+      (if triggersBug then expectFailure  else id)
+    $ Lockstep.runActionsBracket (Proxy @M) initBroken (\_ -> return ()) actions
   where
-    initBroken :: IO (IORef (Maybe BrokenRef))
-    initBroken = newIORef Nothing
+    triggersBug :: Bool
+    triggersBug =
+           buggy == Buggy
+        && "WriteSameVarTwice" `elem` labelActions actions
+
+    initBroken :: IO (Buggy, IORef (Maybe BrokenRef))
+    initBroken = (buggy,) <$> newIORef Nothing
 
 tests :: TestTree
 tests = testGroup "Test.IORef" [
-      testProperty "runActions" propIORef
+      testCase "labelledExamples" $
+        QC.labelledExamples $ Lockstep.tagActions (Proxy @M)
+    , testProperty "runActions" propIORef
     ]

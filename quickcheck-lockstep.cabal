@@ -32,6 +32,7 @@ common lang
       RankNTypes
       ScopedTypeVariables
       StandaloneDeriving
+      TupleSections
       TypeApplications
       TypeFamilies
   other-extensions:
