@@ -1,5 +1,4 @@
-{-# LANGUAGE TypeOperators #-}
-module Test.QuickCheck.StateModel.Lockstep.Op.SumProd (Op(..)) where
+module Test.QuickCheck.StateModel.Lockstep.Op.SumProd (Op(..), intOpId) where
 
 import Control.Monad.Reader (ReaderT)
 import Control.Monad.State
@@ -47,11 +46,13 @@ instance Operation Op where
 instance InterpretOp Op (WrapRealized IO) where
   intOp = intOpRealizedId intOpId
 
-instance InterpretOp Op (WrapRealized (ReaderT r IO)) where
-  intOp = intOpRealizedId intOpId
+instance InterpretOp Op (WrapRealized m)
+      => InterpretOp Op (WrapRealized (StateT s m)) where
+  intOp = intOpTransformer
 
-instance InterpretOp Op (WrapRealized (StateT s IO)) where
-  intOp = intOpRealizedId intOpId
+instance InterpretOp Op (WrapRealized m)
+      => InterpretOp Op (WrapRealized (ReaderT r m)) where
+  intOp = intOpTransformer
 
 {-------------------------------------------------------------------------------
   'Show' and 'Eq' instances
