@@ -1,6 +1,6 @@
 cabal-version:      2.4
 name:               quickcheck-lockstep
-version:            0.2.0
+version:            0.2.1
 license:            BSD-3-Clause
 license-file:       LICENSE
 author:             Edsko de Vries
