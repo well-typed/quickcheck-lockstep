@@ -1,5 +1,9 @@
 # Revision history for quickcheck-lockstep
 
+## 0.2.1 -- 2022-12-06
+
+* Expose necessary definitions for custom `Operation` instances (Joris Dral)
+
 ## 0.2.0 -- 2022-11-11
 
 * Relax bounds on `base` (support up to ghc 9.4)
