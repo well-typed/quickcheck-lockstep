@@ -80,7 +80,8 @@ test-suite test-quickcheck-lockstep
   other-modules:
       Test.MockFS
       Test.MockFS.Mock
-      Test.IORef
+      Test.IORef.Full
+      Test.IORef.Simple
   default-extensions:
       DeriveGeneric
       EmptyCase
