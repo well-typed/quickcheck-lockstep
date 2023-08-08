@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 -- | Run lockstep tests
 --
 -- Intended for qualified import.
@@ -15,7 +17,11 @@ module Test.QuickCheck.StateModel.Lockstep.Run (
 import Prelude hiding (init)
 
 import Control.Exception
+#if __GLASGOW_HASKELL__ >= 906
+import Control.Monad (void)
+#else
 import Control.Monad.Reader
+#endif
 import Data.Set (Set)
 import Data.Set qualified as Set
 import Data.Typeable
