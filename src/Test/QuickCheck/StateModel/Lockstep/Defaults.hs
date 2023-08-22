@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -Wno-orphans #-}
+
 -- | Default implementations for the @quickcheck-dynamic@ class methods
 --
 -- Intended for qualified import.
@@ -18,12 +20,14 @@ module Test.QuickCheck.StateModel.Lockstep.Defaults (
 import Prelude hiding (init)
 
 import Data.Constraint (Dict(..))
-import Data.Maybe (isNothing)
+import Data.Set qualified as Set
 import Data.Typeable
 
 import Test.QuickCheck (Gen, Property)
 import Test.QuickCheck qualified as QC
-import Test.QuickCheck.StateModel (Var, Any(..), LookUp, Realized)
+import Test.QuickCheck.StateModel ( Var, Any(..), LookUp, Realized, PostconditionM
+                                  , Action, monitorPost)
+import Test.QuickCheck.StateModel.Variables (VarContext, HasVariables (..))
 
 import Test.QuickCheck.StateModel.Lockstep.API
 import Test.QuickCheck.StateModel.Lockstep.EnvF (EnvF)
@@ -68,16 +72,17 @@ precondition (Lockstep _ env) =
 -- | Default implementation for 'Test.QuickCheck.StateModel.arbitraryAction'
 arbitraryAction ::
      InLockstep state
-  => Lockstep state -> Gen (Any (LockstepAction state))
-arbitraryAction (Lockstep state env) =
+  => VarContext -> Lockstep state -> Gen (Any (LockstepAction state))
+arbitraryAction _ (Lockstep state env) =
     arbitraryWithVars (varsOfType env) state
 
 -- | Default implementation for 'Test.QuickCheck.StateModel.shrinkAction'
 shrinkAction ::
      InLockstep state
-  => Lockstep state
+  => VarContext
+  -> Lockstep state
   -> LockstepAction state a -> [Any (LockstepAction state)]
-shrinkAction (Lockstep state env) =
+shrinkAction _ (Lockstep state env) =
     shrinkWithVars (varsOfType env) state
 
 {-------------------------------------------------------------------------------
@@ -94,9 +99,11 @@ postcondition :: forall m state a.
   -> LockstepAction state a
   -> LookUp m
   -> Realized m a
-  -> m Bool
+  -> PostconditionM m Bool
 postcondition (before, _after) action _lookUp a =
-    pure $ isNothing $ checkResponse (Proxy @m) before action a
+    case checkResponse (Proxy @m) before action a of
+      Nothing -> pure True
+      Just s  -> monitorPost (QC.counterexample s) >> pure False
 
 monitoring :: forall m state a.
      RunLockstep state m
@@ -106,9 +113,8 @@ monitoring :: forall m state a.
   -> LookUp m
   -> Realized m a
   -> Property -> Property
-monitoring p (before, after) action _lookUp realResp =
+monitoring _p (before, after) action _lookUp _realResp =
       QC.counterexample ("State: " ++ show after)
-    . maybe id QC.counterexample (checkResponse p before action realResp)
     . QC.tabulate "Tags" tags
   where
     tags :: [String]
@@ -119,6 +125,24 @@ monitoring p (before, after) action _lookUp realResp =
                         action
                         (lookUpEnvF $ lockstepEnv before)
                         (lockstepModel before)
+
+{-------------------------------------------------------------------------------
+  Default class instances
+-------------------------------------------------------------------------------}
+
+-- | Ignore variables for lockstep state.
+--
+-- We largely ignore @quickcheck-dynamic@'s variables in the lockstep framework,
+-- since it does its own accounting of model variables.
+instance HasVariables (Lockstep state) where
+  getAllVariables _ = Set.empty
+
+-- | Ignore variables for lockstep actions.
+--
+-- We largely ignore @quickcheck-dynamic@'s variables in the lockstep framework,
+-- since it does its own accounting of model variables.
+instance HasVariables (Action (Lockstep state) a) where
+  getAllVariables _ = Set.empty
 
 {-------------------------------------------------------------------------------
   Internal auxiliary

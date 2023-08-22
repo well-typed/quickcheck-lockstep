@@ -21,7 +21,7 @@ import Data.Foldable (asum)
 import Data.Maybe (mapMaybe)
 import Data.Typeable
 
-import Test.QuickCheck.StateModel (Var(..))
+import Test.QuickCheck.StateModel.Variables (Var, unsafeCoerceVar)
 
 {-------------------------------------------------------------------------------
   Types
@@ -51,8 +51,8 @@ lookup = \var (EnvF env) ->
     asum $ map (\(EnvEntry var' fa') -> aux var var' fa') env
   where
     aux :: Typeable a' => Var a -> Var a' -> f a' -> Maybe (f a)
-    aux (Var x) (Var y) fa' = do
-        guard (x == y)
+    aux v1 v2 fa' = do
+        guard (v1 == unsafeCoerceVar v2)
         cast fa'
 
 keysOfType :: Typeable a => EnvF f -> [Var a]

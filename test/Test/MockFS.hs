@@ -32,7 +32,7 @@ import Test.Tasty.QuickCheck (testProperty)
 
 import Test.QuickCheck (Gen)
 import Test.QuickCheck qualified as QC
-import Test.QuickCheck.StateModel
+import Test.QuickCheck.StateModel hiding (vars)
 
 import Test.QuickCheck.StateModel.Lockstep
 import Test.QuickCheck.StateModel.Lockstep.Defaults qualified as Lockstep

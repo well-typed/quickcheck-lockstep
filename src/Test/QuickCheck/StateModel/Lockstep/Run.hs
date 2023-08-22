@@ -69,7 +69,7 @@ labelActions (Actions steps) =
   where
     go :: Set String -> Lockstep state -> [Step (Lockstep state)] -> [String]
     go tags _st []            = Set.toList tags
-    go tags  st ((v:=a) : ss) = go' tags st v a ss
+    go tags  st ((v:=a) : ss) = go' tags st v (polarAction a) ss
 
     go' :: forall a.
          Typeable a
