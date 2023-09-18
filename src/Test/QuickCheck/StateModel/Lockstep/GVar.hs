@@ -21,7 +21,7 @@ import Prelude hiding (map)
 import Data.Maybe (isJust, fromJust)
 import Data.Typeable
 
-import Test.QuickCheck.StateModel (Var(..), LookUp, Realized)
+import Test.QuickCheck.StateModel (Var, LookUp, Realized)
 
 import Test.QuickCheck.StateModel.Lockstep.EnvF (EnvF)
 import Test.QuickCheck.StateModel.Lockstep.EnvF qualified as EnvF
