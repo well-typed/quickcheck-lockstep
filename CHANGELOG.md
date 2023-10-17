@@ -1,5 +1,10 @@
 # Revision history for quickcheck-lockstep
 
+## 0.3.0 -- 2023-10-17
+
+* BREAKING: Update `quickcheck-dynamic` dependency to `>=3.3`.
+* Add compatibility with ghc-9.6 (Javier Sagredo)
+
 ## 0.2.1 -- 2022-12-06
 
 * Expose necessary definitions for custom `Operation` instances (Joris Dral)
