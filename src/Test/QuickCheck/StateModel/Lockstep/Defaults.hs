@@ -137,12 +137,13 @@ monitoring _p (before, after) action _lookUp _realResp =
 instance HasVariables (Lockstep state) where
   getAllVariables _ = Set.empty
 
--- | Ignore variables for lockstep actions.
+-- | Do not ignore variables for lockstep actions.
 --
--- We largely ignore @quickcheck-dynamic@'s variables in the lockstep framework,
--- since it does its own accounting of model variables.
-instance HasVariables (Action (Lockstep state) a) where
-  getAllVariables _ = Set.empty
+-- @quickcheck-dynamic@ prints counterexamples as code that is more or less
+-- runnable, which requires a sensible 'HasVariables' instance for lockstep
+-- actions.
+instance InLockstep state => HasVariables (Action (Lockstep state) a) where
+  getAllVariables = Set.unions . fmap getAllVariables . usedVars
 
 {-------------------------------------------------------------------------------
   Internal auxiliary

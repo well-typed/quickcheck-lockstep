@@ -1,7 +1,10 @@
 # Revision history for quickcheck-lockstep
 
-## next release
+## 0.4.0 -- 2024-02-17
 
+* BREAKING: Counter-examples now produce valid code. To facilitate this,
+  `HasVariables` and `Show` instances have changed, and a new `unsafeMkGVar`
+  smart constructor is exposed.
 * Add compatibility with ghc-9.8
 
 ## 0.3.0 -- 2023-10-17

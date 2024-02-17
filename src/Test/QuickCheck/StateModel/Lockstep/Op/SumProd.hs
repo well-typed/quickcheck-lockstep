@@ -93,10 +93,9 @@ instance Show (Op a b) where
       _        -> go op
     where
       go :: Op x y -> String -> String
-      go OpId         = showString "id"
-      go OpFst        = showString "fst"
-      go OpSnd        = showString "snd"
-      go OpLeft       = showString "fromLeft"
-      go OpRight      = showString "fromRight"
-      go (OpComp g f) = go g . showString " . " . go f
-
+      go OpId         = showString "OpId"
+      go OpFst        = showString "OpFst"
+      go OpSnd        = showString "OpSnd"
+      go OpLeft       = showString "OpLeft"
+      go OpRight      = showString "OpRight"
+      go (OpComp g f) = go g . showString " `OpComp` " . go f
