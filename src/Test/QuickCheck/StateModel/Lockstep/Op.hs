@@ -1,3 +1,5 @@
+{-# LANGUAGE TypeOperators #-}
+
 module Test.QuickCheck.StateModel.Lockstep.Op (
     Operation(..)
   , InterpretOp(..)
