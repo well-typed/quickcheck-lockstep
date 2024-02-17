@@ -1,5 +1,9 @@
 # Revision history for quickcheck-lockstep
 
+## next release
+
+* Add compatibility with ghc-9.8
+
 ## 0.3.0 -- 2023-10-17
 
 * BREAKING: Update `quickcheck-dynamic` dependency to `>=3.3`.
