@@ -16,8 +16,8 @@ module Test.MockFS (tests) where
 import Prelude hiding (init)
 
 import Control.Exception (catch, throwIO)
-import Control.Monad
-import Control.Monad.Reader
+import Control.Monad (replicateM, (<=<))
+import Control.Monad.Reader (ReaderT (..))
 import Data.Bifunctor
 import Data.Set (Set)
 import Data.Set qualified as Set
