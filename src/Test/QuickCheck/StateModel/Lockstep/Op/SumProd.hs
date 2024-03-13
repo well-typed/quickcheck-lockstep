@@ -1,12 +1,8 @@
-{-# LANGUAGE CPP #-}
-
 module Test.QuickCheck.StateModel.Lockstep.Op.SumProd (Op(..), intOpId) where
 
-#if __GLASGOW_HASKELL__ >= 906
 import Control.Monad ((<=<))
-#endif
 import Control.Monad.Reader (ReaderT)
-import Control.Monad.State
+import Control.Monad.State (StateT)
 import GHC.Show (appPrec)
 
 import Test.QuickCheck.StateModel.Lockstep.Op
