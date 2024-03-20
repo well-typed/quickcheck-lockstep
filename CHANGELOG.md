@@ -1,6 +1,6 @@
 # Revision history for quickcheck-lockstep
 
-## 0.4.1 -- 2024-02-21
+## 0.4.1 -- 2024-03-20
 
 * PATCH: fix compilation failures when using `mtl ^>=2.3`
 
