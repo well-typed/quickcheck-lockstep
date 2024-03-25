@@ -26,7 +26,7 @@ import Data.Typeable
 import Test.QuickCheck (Gen, Property)
 import Test.QuickCheck qualified as QC
 import Test.QuickCheck.StateModel ( Var, Any(..), LookUp, Realized, PostconditionM
-                                  , Action, monitorPost)
+                                  , Action, monitorPost, StateModel (Error))
 import Test.QuickCheck.StateModel.Variables (VarContext, HasVariables (..))
 
 import Test.QuickCheck.StateModel.Lockstep.API
@@ -111,7 +111,7 @@ monitoring :: forall m state a.
   -> (Lockstep state, Lockstep state)
   -> LockstepAction state a
   -> LookUp m
-  -> Realized m a
+  -> Either (Error (Lockstep state)) (Realized m a)
   -> Property -> Property
 monitoring _p (before, after) action _lookUp _realResp =
       QC.counterexample ("State: " ++ show after)

@@ -1,3 +1,5 @@
+{-# LANGUAGE TypeOperators #-}
+
 -- | Run lockstep tests
 --
 -- Intended for qualified import.
@@ -91,10 +93,13 @@ labelActions (Actions steps) =
 -------------------------------------------------------------------------------}
 
 runActions ::
-     RunLockstep state IO
+     ( RunLockstep state IO
+     , e ~ Error (Lockstep state)
+     , forall a. IsPerformResult e a
+     )
   => Proxy state
   -> Actions (Lockstep state) -> Property
-runActions _ actions = monadicIO $ void $ StateModel.runActions actions
+runActions _ actions = monadicIO $ void $ StateModel.runActions  actions
 
 -- | Convenience runner with support for state initialization
 --
@@ -105,7 +110,10 @@ runActions _ actions = monadicIO $ void $ StateModel.runActions actions
 -- @'ReaderT' r 'IO'@. In this case, using @'runReaderT'@ as the runner argument
 -- is a reasonable choice.
 runActionsBracket ::
-     RunLockstep state m
+     ( RunLockstep state m
+     , e ~ Error (Lockstep state)
+     , forall a. IsPerformResult e a
+     )
   => Proxy state
   -> IO st         -- ^ Initialisation
   -> (st -> IO ()) -- ^ Cleanup

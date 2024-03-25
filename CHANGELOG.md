@@ -1,5 +1,13 @@
 # Revision history for quickcheck-lockstep
 
+## 0.5.0 -- 2024-03-25
+
+* BREAKING: Update `quickcheck-dynamic` dependency to `>=3.4.1`. The main change
+  is that `quickcheck-dynamic`'s `StateModel` class now has an associated type
+  `Error`, the use of which is optional. However, as a result, some functions in
+  `quickcheck-lockstep` change type signatures: the default `monitoring`
+  function, `runActions`, and `runActionsBracket`.
+
 ## 0.4.1 -- 2024-03-20
 
 * PATCH: fix compilation failures when using `mtl ^>=2.3`
