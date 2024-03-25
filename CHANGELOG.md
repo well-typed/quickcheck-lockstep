@@ -1,6 +1,6 @@
 # Revision history for quickcheck-lockstep
 
-## next release -- ????-??-??
+## 0.5.0 -- 2024-03-25
 
 * BREAKING: Update `quickcheck-dynamic` dependency to `>=3.4.1`. The main change
   is that `quickcheck-dynamic`'s `StateModel` class now has an associated type
