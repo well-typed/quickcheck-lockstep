@@ -1,13 +1,15 @@
-cabal-version:      2.4
-name:               quickcheck-lockstep
-version:            0.5.0
-license:            BSD-3-Clause
-license-file:       LICENSE
-author:             Edsko de Vries
-maintainer:         edsko@well-typed.com, joris@well-typed.com
-extra-doc-files:    README.md
-extra-source-files: CHANGELOG.md
-category:           Testing
+cabal-version:   2.4
+name:            quickcheck-lockstep
+version:         0.5.1
+license:         BSD-3-Clause
+license-file:    LICENSE
+author:          Edsko de Vries
+maintainer:      edsko@well-typed.com, joris@well-typed.com
+extra-doc-files:
+  CHANGELOG.md
+  README.md
+
+category:        Testing
 synopsis:
   Library for lockstep-style testing with 'quickcheck-dynamic'
 
