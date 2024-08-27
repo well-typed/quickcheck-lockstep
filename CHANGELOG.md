@@ -1,5 +1,10 @@
 # Revision history for quickcheck-lockstep
 
+## 0.5.1 -- 2024-08-27
+
+* PATCH: allow building with `ghc-9.10`
+* PATCH: bump dependency versions for `containers` and `QuickCheck`
+
 ## 0.5.0 -- 2024-03-25
 
 * BREAKING: Update `quickcheck-dynamic` dependency to `>=3.4.1`. The main change
