@@ -1,5 +1,26 @@
 # Revision history for quickcheck-lockstep
 
+## ?.?.? -- ????-??-??
+
+* BREAKING: Generalise `ModelFindVariables` and `ModelLookup` to
+  `ModelVarContext`. Occurrences of `ModelFindVariables` and `ModelLookup` in
+  the `InLockstep` class are replaced by the newly exposed `ModelVarContext`. A
+  `ModelFindVariables` can be recovered from a `ModelVarContext` using the new
+  `findVars` functions. A `ModelLookup` can be recovered from a
+  `ModelVarContext` using the new `lookupVars` function. Since these functions
+  can be recovered from `ModelVarContext`, existing tests are guaranteed to be
+  adaptable to the new `InLockstep` API. This breaking changes means that, for
+  example ...
+  ```haskell
+  arbitraryWithVars lookupVars = ...
+    (lookupVars ...)
+  ```
+  ... should be changed to ...
+  ```haskell
+  arbitraryWithVars vctx = ...
+    (lookupVars vctx ...)
+  ```
+
 ## 0.5.1 -- 2024-08-27
 
 * PATCH: allow building with `ghc-9.10`

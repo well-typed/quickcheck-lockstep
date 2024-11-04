@@ -1,3 +1,5 @@
+{- HLINT ignore "Eta reduce" -}
+
 -- | Public API
 --
 -- This is re-exported through "Test.QuickCheck.StateModel.Lockstep".
@@ -13,6 +15,10 @@ module Test.QuickCheck.StateModel.Lockstep.API (
   , ModelFindVariables
   , ModelLookUp
   , ModelVar
+    -- * Variable context
+  , ModelVarContext
+  , findVars
+  , lookupVar
   ) where
 
 import Data.Constraint (Dict(..))
@@ -23,9 +29,11 @@ import Test.QuickCheck (Gen)
 import Test.QuickCheck.StateModel (StateModel, Any, RunModel, Realized, Action)
 
 import Test.QuickCheck.StateModel.Lockstep.EnvF (EnvF)
-import Test.QuickCheck.StateModel.Lockstep.GVar (GVar, AnyGVar(..))
+import Test.QuickCheck.StateModel.Lockstep.GVar (GVar, AnyGVar(..), fromVar)
 import Test.QuickCheck.StateModel.Lockstep.Op
 import Test.QuickCheck.StateModel.Lockstep.Op.Identity qualified as Identity
+import Test.QuickCheck.StateModel.Lockstep.EnvF qualified as EnvF
+import Test.QuickCheck.StateModel.Lockstep.GVar qualified as EnvF
 
 {-------------------------------------------------------------------------------
   Lockstep state
@@ -114,22 +122,22 @@ class
   -- The order of the arguments mimicks 'perform'.
   modelNextState ::
        LockstepAction state a
-    -> ModelLookUp state
+    -> ModelVarContext state
     -> state
     -> (ModelValue state a, state)
 
-  -- | Generate an arbitrary action, given a way to find variables
+  -- | Generate an arbitrary action, given a variable context
   arbitraryWithVars ::
-       ModelFindVariables state
+       ModelVarContext state
     -> state
     -> Gen (Any (LockstepAction state))
 
-  -- | Shrink an action, given a way to find variables
+  -- | Shrink an action, given a variable context
   --
   -- This is optional; without an implementation of 'shrinkWithVars', lists of
   -- actions will still be pruned, but /individual/ actions will not be shrunk.
   shrinkWithVars ::
-       ModelFindVariables state
+       ModelVarContext state
     -> state
     -> LockstepAction state a
     -> [Any (LockstepAction state)]
@@ -188,3 +196,25 @@ type ModelFindVariables state = forall a.
 -- | Variables with a "functor-esque" instance
 type ModelVar state = GVar (ModelOp state)
 
+{-------------------------------------------------------------------------------
+  Variable context
+-------------------------------------------------------------------------------}
+
+-- | The environment of known variables and their (model) values.
+--
+-- This environment can be queried for information about known variables through
+-- 'findVars' and 'lookupVar'. This environment is updated automically by the
+-- lockstep framework.
+type ModelVarContext state = EnvF (ModelValue state)
+
+-- | See 'ModelFindVariables'.
+findVars ::
+     InLockstep state
+  => ModelVarContext state -> ModelFindVariables state
+findVars env _ = map fromVar $ EnvF.keysOfType env
+
+-- | See 'ModelLookUp'.
+lookupVar ::
+     InLockstep state
+  => ModelVarContext state -> ModelLookUp state
+lookupVar env = EnvF.lookUpEnvF env

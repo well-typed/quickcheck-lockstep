@@ -101,11 +101,11 @@ instance InLockstep M where
   usedVars (Write v _) = [SomeGVar v]
   usedVars (Read  v)   = [SomeGVar v]
 
-  modelNextState = runModel
+  modelNextState action ctx = runModel action (lookupVar ctx)
 
-  arbitraryWithVars findVars _mock = oneof $ concat [
+  arbitraryWithVars ctx _mock = oneof $ concat [
         withoutVars
-      , case findVars (Proxy @(IORef Int)) of
+      , case findVars ctx (Proxy @(IORef Int)) of
           []   -> []
           vars -> withVars (elements vars)
       ]
