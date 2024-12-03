@@ -1,6 +1,6 @@
 # Revision history for quickcheck-lockstep
 
-## ?.?.? -- ????-??-??
+## 0.6.0 -- 2024-12-03
 
 * BREAKING: Generalise `ModelFindVariables` and `ModelLookup` to
   `ModelVarContext`. Occurrences of `ModelFindVariables` and `ModelLookup` in
