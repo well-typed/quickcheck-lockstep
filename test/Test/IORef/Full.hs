@@ -124,11 +124,11 @@ instance InLockstep M where
   usedVars (Write v (Right v')) = [SomeGVar v, SomeGVar v']
   usedVars (Read  v)            = [SomeGVar v]
 
-  modelNextState = runModel
+  modelNextState action ctx = runModel action (lookupVar ctx)
 
-  arbitraryWithVars findVars _mock = oneof $ concat [
+  arbitraryWithVars ctx _mock = oneof $ concat [
         withoutVars
-      , case findVars (Proxy @(IORef Int)) of
+      , case findVars ctx (Proxy @(IORef Int)) of
           []   -> []
           vars -> withVars (elements vars)
       ]
@@ -144,11 +144,11 @@ instance InLockstep M where
           , fmap Some $ Read  <$> genVar
           ]
 
-  shrinkWithVars findVars _mock = \case
+  shrinkWithVars ctx _mock = \case
       New               -> []
       Write v (Left x)  -> concat [
                                Some . Write v . Left  <$> shrink x
-                             , Some . Write v . Right <$> findVars (Proxy @Int)
+                             , Some . Write v . Right <$> findVars ctx (Proxy @Int)
                              ]
       Write _ (Right _) -> []
       Read  _           -> []

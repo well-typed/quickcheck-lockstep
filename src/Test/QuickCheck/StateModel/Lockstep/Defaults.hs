@@ -30,7 +30,6 @@ import Test.QuickCheck.StateModel ( Var, Any(..), LookUp, Realized, Postconditio
 import Test.QuickCheck.StateModel.Variables (VarContext, HasVariables (..))
 
 import Test.QuickCheck.StateModel.Lockstep.API
-import Test.QuickCheck.StateModel.Lockstep.EnvF (EnvF)
 import Test.QuickCheck.StateModel.Lockstep.EnvF qualified as EnvF
 import Test.QuickCheck.StateModel.Lockstep.GVar
 
@@ -57,7 +56,7 @@ nextState (Lockstep state env) action var =
   where
     modelResp :: ModelValue state a
     state'    :: state
-    (modelResp, state') = modelNextState action (lookUpEnvF env) state
+    (modelResp, state') = modelNextState action env state
 
 -- | Default implementation for 'Test.QuickCheck.StateModel.precondition'
 --
@@ -74,7 +73,7 @@ arbitraryAction ::
      InLockstep state
   => VarContext -> Lockstep state -> Gen (Any (LockstepAction state))
 arbitraryAction _ (Lockstep state env) =
-    arbitraryWithVars (varsOfType env) state
+    arbitraryWithVars env state
 
 -- | Default implementation for 'Test.QuickCheck.StateModel.shrinkAction'
 shrinkAction ::
@@ -83,7 +82,7 @@ shrinkAction ::
   -> Lockstep state
   -> LockstepAction state a -> [Any (LockstepAction state)]
 shrinkAction _ (Lockstep state env) =
-    shrinkWithVars (varsOfType env) state
+    shrinkWithVars env state
 
 {-------------------------------------------------------------------------------
   Default implementations for methods of 'RunModel'
@@ -123,7 +122,7 @@ monitoring _p (before, after) action _lookUp _realResp =
     modelResp :: ModelValue state a
     modelResp = fst $ modelNextState
                         action
-                        (lookUpEnvF $ lockstepEnv before)
+                        (lockstepEnv before)
                         (lockstepModel before)
 
 {-------------------------------------------------------------------------------
@@ -149,11 +148,6 @@ instance InLockstep state => HasVariables (Action (Lockstep state) a) where
   Internal auxiliary
 -------------------------------------------------------------------------------}
 
-varsOfType ::
-     InLockstep state
-  => EnvF (ModelValue state) -> ModelFindVariables state
-varsOfType env _ = map fromVar $ EnvF.keysOfType env
-
 -- | Check the response of the system under test against the model
 --
 -- This is used in 'postcondition', where we can however only return a 'Bool',
@@ -168,7 +162,7 @@ checkResponse p (Lockstep state env) action a =
       (modelResp , observeModel modelResp)
   where
     modelResp :: ModelValue state a
-    modelResp = fst $ modelNextState action (lookUpEnvF env) state
+    modelResp = fst $ modelNextState action env state
 
     compareEquality ::
          (Realized m a, Observable state a)

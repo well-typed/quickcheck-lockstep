@@ -150,10 +150,10 @@ instance InLockstep FsState where
 
   modelNextState :: forall a.
        LockstepAction FsState a
-    -> ModelLookUp FsState
+    -> ModelVarContext FsState
     -> FsState -> (FsVal a, FsState)
-  modelNextState action lookUp (FsState mock stats) =
-      auxStats $ runMock lookUp action mock
+  modelNextState action ctx (FsState mock stats) =
+      auxStats $ runMock ctx action mock
     where
       auxStats :: (FsVal a, Mock) -> (FsVal a, FsState)
       auxStats (result, state') =
@@ -178,8 +178,8 @@ instance InLockstep FsState where
   -- Generation, shrinking and labelling
   --
 
-  arbitraryWithVars findVars _mock = arbitraryFsAction findVars
-  shrinkWithVars    findVars _mock = shrinkFsAction    findVars
+  arbitraryWithVars env _mock = arbitraryFsAction env
+  shrinkWithVars    env _mock = shrinkFsAction    env
 
   tagStep (_, FsState _ after) act = map show . tagFsAction after act
 
@@ -208,15 +208,15 @@ instance RunLockstep FsState RealMonad where
 -------------------------------------------------------------------------------}
 
 runMock ::
-     ModelLookUp FsState
+     ModelVarContext FsState
   -> Action (Lockstep FsState) a
   -> Mock -> (FsVal a, Mock)
-runMock lookUp = \case
+runMock ctx = \case
     MkDir d   -> wrap MUnit     . Mock.mMkDir d
     Open f    -> wrap (mOpen f) . Mock.mOpen f
-    Write h s -> wrap MUnit     . Mock.mWrite (getHandle $ lookUp h) s
-    Close h   -> wrap MUnit     . Mock.mClose (getHandle $ lookUp h)
-    Read f    -> wrap MString   . Mock.mRead (either (getFile . lookUp) id f)
+    Write h s -> wrap MUnit     . Mock.mWrite (getHandle $ lookupVar ctx h) s
+    Close h   -> wrap MUnit     . Mock.mClose (getHandle $ lookupVar ctx h)
+    Read f    -> wrap MString   . Mock.mRead (either (getFile . lookupVar ctx) id f)
   where
     wrap :: (a -> FsVal b) -> (Either Err a, Mock) -> (FsVal (Either Err b), Mock)
     wrap f = first (MEither . bimap MErr f)
@@ -235,11 +235,11 @@ runMock lookUp = \case
 -------------------------------------------------------------------------------}
 
 arbitraryFsAction ::
-     ModelFindVariables FsState
+     ModelVarContext FsState
   -> Gen (Any (LockstepAction FsState))
-arbitraryFsAction findVars = QC.oneof $ concat [
+arbitraryFsAction ctx = QC.oneof $ concat [
       withoutVars
-    , case findVars (Proxy @((Either Err (IO.Handle, File)))) of
+    , case findVars ctx (Proxy @((Either Err (IO.Handle, File)))) of
         []   -> []
         vars -> withVars (QC.elements vars)
     ]
@@ -274,16 +274,16 @@ arbitraryFsAction findVars = QC.oneof $ concat [
     genString = QC.sized $ \n -> replicateM n (QC.elements "ABC")
 
 shrinkFsAction ::
-     ModelFindVariables FsState
+     ModelVarContext FsState
   -> Action (Lockstep FsState) a -> [Any (LockstepAction FsState)]
-shrinkFsAction findVars = \case
+shrinkFsAction ctx = \case
     Open (File (Dir []) ('t' : n)) ->
       [openTemp n' | n' <- QC.shrink (read n)]
     Open _ ->
       [openTemp 100]
     Read (Right _) ->
       [ Some $ Read (Left $ mapGVar (\op -> OpSnd `OpComp` OpRight `OpComp` op) v)
-      | v <- findVars (Proxy @((Either Err (IO.Handle, File))))
+      | v <- findVars ctx (Proxy @((Either Err (IO.Handle, File))))
       ]
     _otherwise ->
       []

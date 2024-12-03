@@ -30,7 +30,6 @@ import Test.QuickCheck.StateModel qualified as StateModel
 
 import Test.QuickCheck.StateModel.Lockstep.API
 import Test.QuickCheck.StateModel.Lockstep.EnvF qualified as EnvF
-import Test.QuickCheck.StateModel.Lockstep.GVar
 
 {-------------------------------------------------------------------------------
   Finding labelled examples
@@ -83,7 +82,7 @@ labelActions (Actions steps) =
 
         modelResp :: ModelValue state a
         after     :: state
-        (modelResp, after) = modelNextState action (lookUpEnvF env) before
+        (modelResp, after) = modelNextState action env before
 
         tags' :: [String]
         tags' = tagStep (before, after) action modelResp
