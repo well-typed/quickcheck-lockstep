@@ -100,7 +100,7 @@ postcondition :: forall m state a.
   -> LookUp m
   -> Realized m a
   -> PostconditionM m Bool
-postcondition = postconditionWith False
+postcondition = postconditionWith True
 
 -- | Like 'postcondition', but with configurable verbosity.
 --
