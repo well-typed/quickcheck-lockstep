@@ -14,6 +14,9 @@
 module Test.MockFS (
     tests
   , propLockstep
+    -- * Unsafe: induce test failure
+  , setInduceFault
+  , setNoInduceFault
     -- * Unsafe: set postcondition
   , setPostconditionDefault
   , setPostconditionNonVerbose
@@ -340,8 +343,12 @@ runIO action lookUp = ReaderT $ \root -> aux root action
           IO.hPutStr (lookUp' h) s
         Close h -> catchErr $
           IO.hClose (lookUp' h)
-        Read f -> catchErr $
-          IO.readFile (Mock.fileFP root $ either lookUp' id f)
+        Read f -> catchErr $ do
+          fault <- getFaultRef
+          s <- IO.readFile (Mock.fileFP root $ either lookUp' id f)
+          case fault of
+            Fault | length s >= 3 -> pure ""
+            _                     -> pure s
       where
         lookUp' :: FsVar x -> x
         lookUp' = lookUpGVar (Proxy @RealMonad) lookUp
@@ -399,6 +406,36 @@ createSystemTempDirectory :: [Char] -> IO FilePath
 createSystemTempDirectory prefix = do
     systemTempDir <- getCanonicalTemporaryDirectory
     createTempDirectory systemTempDir prefix
+
+{-------------------------------------------------------------------------------
+  Unsafe: induce test failure
+-------------------------------------------------------------------------------}
+
+data Fault = Fault | NoFault
+  deriving Eq
+
+{-# NOINLINE faultRef #-}
+-- | A mutable variable that can be set globally to induce test failures in
+-- 'propLockstep'. This is used in "Test.Golden" to golden test counterexamples
+-- as produced by the @quickcheck-lockstep@.
+faultRef :: IORef Fault
+faultRef = unsafePerformIO $ newIORef NoFault
+
+{-# NOINLINE getFaultRef #-}
+getFaultRef :: IO Fault
+getFaultRef = readIORef faultRef
+
+{-# NOINLINE setFaultRef #-}
+setFaultRef :: Fault -> IO ()
+setFaultRef = writeIORef faultRef
+
+{-# NOINLINE setInduceFault #-}
+setInduceFault :: IO ()
+setInduceFault = setFaultRef Fault
+
+{-# NOINLINE setNoInduceFault #-}
+setNoInduceFault ::  IO ()
+setNoInduceFault = setFaultRef NoFault
 
 {-------------------------------------------------------------------------------
   Unsafe: set postcondition
