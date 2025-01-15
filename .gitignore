@@ -1,5 +1,7 @@
 dist-newstyle
 .envrc
+_tmp
+haddocks/
 
 # Haskell.gitignore
 dist

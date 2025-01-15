@@ -11,14 +11,27 @@
 {-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeFamilies          #-}
 
-module Test.MockFS (tests) where
+module Test.MockFS (
+    tests
+  , propLockstep
+    -- * Unsafe: induce test failure
+  , setInduceFault
+  , setNoInduceFault
+    -- * Unsafe: set postcondition
+  , setPostconditionDefault
+  , setPostconditionNonVerbose
+  , setPostconditionVerbose
+  ) where
 
 import Prelude hiding (init)
 
 import Control.Exception (catch, throwIO)
 import Control.Monad (replicateM, (<=<))
 import Control.Monad.Reader (ReaderT (..))
+import Control.Monad.Trans (lift)
 import Data.Bifunctor
+import Data.Constraint
+import Data.IORef
 import Data.Set (Set)
 import Data.Set qualified as Set
 import Data.Typeable
@@ -26,6 +39,7 @@ import System.Directory (removeDirectoryRecursive)
 import System.Directory qualified as IO
 import System.IO qualified as IO
 import System.IO.Temp (createTempDirectory, getCanonicalTemporaryDirectory)
+import System.IO.Unsafe (unsafePerformIO)
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit
 import Test.Tasty.QuickCheck (testProperty)
@@ -83,7 +97,9 @@ instance StateModel (Lockstep FsState) where
 
 instance RunModel (Lockstep FsState) RealMonad where
   perform       = \_st -> runIO
-  postcondition = Lockstep.postcondition
+  postcondition states action lookUp result = do
+      pc <- lift $ lift getPostcondition
+      runPostcondition pc states action lookUp result
   monitoring    = Lockstep.monitoring (Proxy @RealMonad)
 
 deriving instance Show (Action (Lockstep FsState) a)
@@ -203,6 +219,13 @@ instance RunLockstep FsState RealMonad where
       Close{} -> OEither . bimap OId OId
       Read{}  -> OEither . bimap OId OId
 
+  showRealResponse _ = \case
+      MkDir{} -> Just Dict
+      Open{} -> Nothing
+      Write{} -> Just Dict
+      Close{} -> Just Dict
+      Read{} -> Just Dict
+
 {-------------------------------------------------------------------------------
   Interpreter against the model
 -------------------------------------------------------------------------------}
@@ -320,8 +343,12 @@ runIO action lookUp = ReaderT $ \root -> aux root action
           IO.hPutStr (lookUp' h) s
         Close h -> catchErr $
           IO.hClose (lookUp' h)
-        Read f -> catchErr $
-          IO.readFile (Mock.fileFP root $ either lookUp' id f)
+        Read f -> catchErr $ do
+          fault <- getFaultRef
+          s <- IO.readFile (Mock.fileFP root $ either lookUp' id f)
+          case fault of
+            Fault | length s >= 3 -> pure ""
+            _                     -> pure s
       where
         lookUp' :: FsVar x -> x
         lookUp' = lookUpGVar (Proxy @RealMonad) lookUp
@@ -365,14 +392,91 @@ tests :: TestTree
 tests = testGroup "Test.MockFS" [
       testCase "labelledExamples" $
         QC.labelledExamples $ Lockstep.tagActions (Proxy @FsState)
-    , testProperty "propLockstep" $
-        Lockstep.runActionsBracket (Proxy @FsState)
-          (createSystemTempDirectory "QSM")
-          removeDirectoryRecursive
-          runReaderT
+    , testProperty "propLockstep" propLockstep
     ]
+
+propLockstep :: Actions (Lockstep FsState) -> QC.Property
+propLockstep =
+    Lockstep.runActionsBracket (Proxy @FsState)
+      (createSystemTempDirectory "QSM")
+      removeDirectoryRecursive
+      runReaderT
 
 createSystemTempDirectory :: [Char] -> IO FilePath
 createSystemTempDirectory prefix = do
     systemTempDir <- getCanonicalTemporaryDirectory
     createTempDirectory systemTempDir prefix
+
+{-------------------------------------------------------------------------------
+  Unsafe: induce test failure
+-------------------------------------------------------------------------------}
+
+data Fault = Fault | NoFault
+  deriving Eq
+
+{-# NOINLINE faultRef #-}
+-- | A mutable variable that can be set globally to induce test failures in
+-- 'propLockstep'. This is used in "Test.Golden" to golden test counterexamples
+-- as produced by the @quickcheck-lockstep@.
+faultRef :: IORef Fault
+faultRef = unsafePerformIO $ newIORef NoFault
+
+{-# NOINLINE getFaultRef #-}
+getFaultRef :: IO Fault
+getFaultRef = readIORef faultRef
+
+{-# NOINLINE setFaultRef #-}
+setFaultRef :: Fault -> IO ()
+setFaultRef = writeIORef faultRef
+
+{-# NOINLINE setInduceFault #-}
+setInduceFault :: IO ()
+setInduceFault = setFaultRef Fault
+
+{-# NOINLINE setNoInduceFault #-}
+setNoInduceFault ::  IO ()
+setNoInduceFault = setFaultRef NoFault
+
+{-------------------------------------------------------------------------------
+  Unsafe: set postcondition
+-------------------------------------------------------------------------------}
+
+data Postcondition =
+    DefaultPostcondition
+  | NonVerbosePostcondition
+  | VerbosePostcondition
+
+runPostcondition ::
+     Postcondition
+  -> (Lockstep FsState, Lockstep FsState)
+  -> Action (Lockstep FsState) a
+  -> LookUp RealMonad
+  -> Realized RealMonad a
+  -> PostconditionM RealMonad Bool
+runPostcondition DefaultPostcondition = Lockstep.postcondition
+runPostcondition NonVerbosePostcondition = Lockstep.postconditionWith False
+runPostcondition VerbosePostcondition = Lockstep.postconditionWith True
+
+{-# NOINLINE postconditionRef #-}
+postconditionRef :: IORef Postcondition
+postconditionRef = unsafePerformIO $ newIORef DefaultPostcondition
+
+{-# NOINLINE getPostcondition #-}
+getPostcondition :: IO Postcondition
+getPostcondition = readIORef postconditionRef
+
+{-# NOINLINE setPostconditionDefault #-}
+setPostconditionDefault :: IO ()
+setPostconditionDefault = setPostcondition VerbosePostcondition
+
+{-# NOINLINE setPostconditionVerbose #-}
+setPostconditionVerbose :: IO ()
+setPostconditionVerbose = setPostcondition VerbosePostcondition
+
+{-# NOINLINE setPostconditionNonVerbose #-}
+setPostconditionNonVerbose :: IO ()
+setPostconditionNonVerbose = setPostcondition NonVerbosePostcondition
+
+{-# NOINLINE setPostcondition #-}
+setPostcondition :: Postcondition -> IO ()
+setPostcondition = writeIORef postconditionRef

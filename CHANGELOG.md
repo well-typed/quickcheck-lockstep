@@ -1,5 +1,15 @@
 # Revision history for quickcheck-lockstep
 
+## ?.?.? -- ????-??-??
+
+* BREAKING: Enable verbose counterexamples by default in the 'postcondition'
+  function using 'postconditionWith'.
+* NON-BREAKING: Add a new 'postconditionWith' function that can be configured to
+  produce more verbose counterexamples. With verbosity disabled, all states of
+  the model are printed in a counterexample. If verbosity is enabled, the
+  counterexample will also include all responses from the real system and the
+  model.
+
 ## 0.6.0 -- 2024-12-03
 
 * BREAKING: Generalise `ModelFindVariables` and `ModelLookup` to

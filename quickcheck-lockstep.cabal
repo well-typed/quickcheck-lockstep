@@ -80,6 +80,7 @@ test-suite test-quickcheck-lockstep
   hs-source-dirs:     test
   main-is:            Main.hs
   other-modules:
+    Test.Golden
     Test.IORef.Full
     Test.IORef.Simple
     Test.MockFS
@@ -101,6 +102,7 @@ test-suite test-quickcheck-lockstep
     , quickcheck-dynamic
     , quickcheck-lockstep
     , tasty
+    , tasty-golden
     , tasty-hunit
     , tasty-quickcheck
     , temporary
