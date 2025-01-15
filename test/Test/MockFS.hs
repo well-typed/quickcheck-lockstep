@@ -14,6 +14,10 @@
 module Test.MockFS (
     tests
   , propLockstep
+    -- * Unsafe: set postcondition
+  , setPostconditionDefault
+  , setPostconditionNonVerbose
+  , setPostconditionVerbose
   ) where
 
 import Prelude hiding (init)
@@ -21,8 +25,10 @@ import Prelude hiding (init)
 import Control.Exception (catch, throwIO)
 import Control.Monad (replicateM, (<=<))
 import Control.Monad.Reader (ReaderT (..))
+import Control.Monad.Trans (lift)
 import Data.Bifunctor
 import Data.Constraint
+import Data.IORef
 import Data.Set (Set)
 import Data.Set qualified as Set
 import Data.Typeable
@@ -30,6 +36,7 @@ import System.Directory (removeDirectoryRecursive)
 import System.Directory qualified as IO
 import System.IO qualified as IO
 import System.IO.Temp (createTempDirectory, getCanonicalTemporaryDirectory)
+import System.IO.Unsafe (unsafePerformIO)
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit
 import Test.Tasty.QuickCheck (testProperty)
@@ -87,7 +94,9 @@ instance StateModel (Lockstep FsState) where
 
 instance RunModel (Lockstep FsState) RealMonad where
   perform       = \_st -> runIO
-  postcondition = Lockstep.postcondition
+  postcondition states action lookUp result = do
+      pc <- lift $ lift getPostcondition
+      runPostcondition pc states action lookUp result
   monitoring    = Lockstep.monitoring (Proxy @RealMonad)
 
 deriving instance Show (Action (Lockstep FsState) a)
@@ -390,3 +399,47 @@ createSystemTempDirectory :: [Char] -> IO FilePath
 createSystemTempDirectory prefix = do
     systemTempDir <- getCanonicalTemporaryDirectory
     createTempDirectory systemTempDir prefix
+
+{-------------------------------------------------------------------------------
+  Unsafe: set postcondition
+-------------------------------------------------------------------------------}
+
+data Postcondition =
+    DefaultPostcondition
+  | NonVerbosePostcondition
+  | VerbosePostcondition
+
+runPostcondition ::
+     Postcondition
+  -> (Lockstep FsState, Lockstep FsState)
+  -> Action (Lockstep FsState) a
+  -> LookUp RealMonad
+  -> Realized RealMonad a
+  -> PostconditionM RealMonad Bool
+runPostcondition DefaultPostcondition = Lockstep.postcondition
+runPostcondition NonVerbosePostcondition = Lockstep.postconditionWith False
+runPostcondition VerbosePostcondition = Lockstep.postconditionWith True
+
+{-# NOINLINE postconditionRef #-}
+postconditionRef :: IORef Postcondition
+postconditionRef = unsafePerformIO $ newIORef DefaultPostcondition
+
+{-# NOINLINE getPostcondition #-}
+getPostcondition :: IO Postcondition
+getPostcondition = readIORef postconditionRef
+
+{-# NOINLINE setPostconditionDefault #-}
+setPostconditionDefault :: IO ()
+setPostconditionDefault = setPostcondition VerbosePostcondition
+
+{-# NOINLINE setPostconditionVerbose #-}
+setPostconditionVerbose :: IO ()
+setPostconditionVerbose = setPostcondition VerbosePostcondition
+
+{-# NOINLINE setPostconditionNonVerbose #-}
+setPostconditionNonVerbose :: IO ()
+setPostconditionNonVerbose = setPostcondition NonVerbosePostcondition
+
+{-# NOINLINE setPostcondition #-}
+setPostcondition :: Postcondition -> IO ()
+setPostcondition = writeIORef postconditionRef
