@@ -1,0 +1,19 @@
++++ OK, passed 100 tests.
+
+Action polarity (2489 in total):
+100.00% +
+
+Actions (2489 in total):
+30.33% +MkDir
+28.93% +Open
+27.92% +Read
+ 6.79% +Write
+ 6.03% +Close
+
+Actions rejected by precondition (958 in total):
+52.0% Close
+48.0% Write
+
+Tags (428 in total):
+92.3% OpenTwo
+ 7.7% SuccessfulRead
