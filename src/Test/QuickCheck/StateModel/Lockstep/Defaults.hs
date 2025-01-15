@@ -14,6 +14,7 @@ module Test.QuickCheck.StateModel.Lockstep.Defaults (
   , shrinkAction
     -- * Default implementations for methods of 'RunModel'
   , postcondition
+  , postconditionWith
   , monitoring
   ) where
 
@@ -99,10 +100,27 @@ postcondition :: forall m state a.
   -> LookUp m
   -> Realized m a
   -> PostconditionM m Bool
-postcondition (before, _after) action _lookUp a =
+postcondition = postconditionWith False
+
+-- | Like 'postcondition', but with configurable verbosity.
+--
+-- By default, all states of the model are printed when a property
+-- counterexample is printed. If verbose output is enabled, the counterexample
+-- will also print all responses from the real system and the model.
+postconditionWith :: forall m state a.
+     RunLockstep state m
+  => Bool -- ^ Verbose output
+  -> (Lockstep state, Lockstep state)
+  -> LockstepAction state a
+  -> LookUp m
+  -> Realized m a
+  -> PostconditionM m Bool
+postconditionWith verbose (before, _after) action _lookUp a =
     case checkResponse (Proxy @m) before action a of
-      Nothing -> pure True
-      Just s  -> monitorPost (QC.counterexample s) >> pure False
+      Right s
+        | verbose -> monitorPost (QC.counterexample s) >> pure True
+        | otherwise -> pure True
+      Left s  -> monitorPost (QC.counterexample s) >> pure False
 
 monitoring :: forall m state a.
      RunLockstep state m
@@ -155,7 +173,7 @@ instance InLockstep state => HasVariables (Action (Lockstep state) a) where
 checkResponse :: forall m state a.
      RunLockstep state m
   => Proxy m
-  -> Lockstep state -> LockstepAction state a -> Realized m a -> Maybe String
+  -> Lockstep state -> LockstepAction state a -> Realized m a -> Either String String
 checkResponse p (Lockstep state env) action a =
     compareEquality
       (a         , observeReal p action a)
@@ -166,23 +184,34 @@ checkResponse p (Lockstep state env) action a =
 
     compareEquality ::
          (Realized m a, Observable state a)
-      -> (ModelValue state a, Observable state a) -> Maybe String
+      -> (ModelValue state a, Observable state a) -> Either String String
     compareEquality (realResp, obsRealResp) (mockResp, obsMockResp)
-      | obsRealResp == obsMockResp = Nothing
-      | otherwise                  = Just $ concat [
+      | obsRealResp == obsMockResp = Right $ concat [
             "System under test returned: "
-          , case showRealResponse (Proxy @m) action of
-              Nothing   -> show obsRealResp
-              Just Dict -> concat [
-                  show obsRealResp
-                , " ("
-                , show realResp
-                , ")"
-                ]
+          , sutReturned
+          , "\nModel returned:             "
+          , modelReturned
+          ]
+      | otherwise                  = Left $ concat [
+            "System under test returned: "
+          , sutReturned
           , "\nbut model returned:         "
-          , show obsMockResp
-          , " ("
-          , show mockResp
-          , ")"
+          , modelReturned
           ]
 
+      where
+        sutReturned = case showRealResponse (Proxy @m) action of
+            Nothing   -> show obsRealResp
+            Just Dict -> concat [
+                show obsRealResp
+              , " ("
+              , show realResp
+              , ")"
+              ]
+
+        modelReturned = concat [
+              show obsMockResp
+            , " ("
+            , show mockResp
+            , ")"
+            ]
