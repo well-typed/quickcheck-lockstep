@@ -11,7 +11,10 @@
 {-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeFamilies          #-}
 
-module Test.MockFS (tests) where
+module Test.MockFS (
+    tests
+  , propLockstep
+  ) where
 
 import Prelude hiding (init)
 
@@ -19,6 +22,7 @@ import Control.Exception (catch, throwIO)
 import Control.Monad (replicateM, (<=<))
 import Control.Monad.Reader (ReaderT (..))
 import Data.Bifunctor
+import Data.Constraint
 import Data.Set (Set)
 import Data.Set qualified as Set
 import Data.Typeable
@@ -203,6 +207,13 @@ instance RunLockstep FsState RealMonad where
       Close{} -> OEither . bimap OId OId
       Read{}  -> OEither . bimap OId OId
 
+  showRealResponse _ = \case
+      MkDir{} -> Just Dict
+      Open{} -> Nothing
+      Write{} -> Just Dict
+      Close{} -> Just Dict
+      Read{} -> Just Dict
+
 {-------------------------------------------------------------------------------
   Interpreter against the model
 -------------------------------------------------------------------------------}
@@ -365,12 +376,15 @@ tests :: TestTree
 tests = testGroup "Test.MockFS" [
       testCase "labelledExamples" $
         QC.labelledExamples $ Lockstep.tagActions (Proxy @FsState)
-    , testProperty "propLockstep" $
-        Lockstep.runActionsBracket (Proxy @FsState)
-          (createSystemTempDirectory "QSM")
-          removeDirectoryRecursive
-          runReaderT
+    , testProperty "propLockstep" propLockstep
     ]
+
+propLockstep :: Actions (Lockstep FsState) -> QC.Property
+propLockstep =
+    Lockstep.runActionsBracket (Proxy @FsState)
+      (createSystemTempDirectory "QSM")
+      removeDirectoryRecursive
+      runReaderT
 
 createSystemTempDirectory :: [Char] -> IO FilePath
 createSystemTempDirectory prefix = do
