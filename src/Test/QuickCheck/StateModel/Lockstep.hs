@@ -12,7 +12,7 @@
 -- > import Test.QuickCheck.StateModel.Lockstep.Defaults qualified as Lockstep
 module Test.QuickCheck.StateModel.Lockstep (
     -- * Main abstraction
-    Lockstep -- opaque
+    Lockstep (..)
   , getModel
   , InLockstep(..)
   , RunLockstep(..)
