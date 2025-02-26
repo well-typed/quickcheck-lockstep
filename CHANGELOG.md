@@ -9,6 +9,7 @@
   the model are printed in a counterexample. If verbosity is enabled, the
   counterexample will also include all responses from the real system and the
   model.
+* PATCH: allow building with `ghc-9.12`
 
 ## 0.6.0 -- 2024-12-03
 
