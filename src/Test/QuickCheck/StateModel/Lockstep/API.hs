@@ -15,10 +15,12 @@ module Test.QuickCheck.StateModel.Lockstep.API (
   , ModelFindVariables
   , ModelLookUp
   , ModelVar
+  , ModelShrinkVar
     -- * Variable context
   , ModelVarContext
   , findVars
   , lookupVar
+  , shrinkVar
   ) where
 
 import Data.Constraint (Dict(..))
@@ -193,6 +195,9 @@ type ModelFindVariables state = forall a.
           Typeable a
        => Proxy a -> [GVar (ModelOp state) a]
 
+-- | Shrink variables to /earlier/ variables of the same type.
+type ModelShrinkVar state a = ModelVar state a -> [ModelVar state a]
+
 -- | Variables with a "functor-esque" instance
 type ModelVar state = GVar (ModelOp state)
 
@@ -218,3 +223,7 @@ lookupVar ::
      InLockstep state
   => ModelVarContext state -> ModelLookUp state
 lookupVar env = EnvF.lookUpEnvF env
+
+-- | See 'ModelShrinkVar'.
+shrinkVar :: ModelVarContext state -> ModelShrinkVar state a
+shrinkVar env var = EnvF.shrinkGVar env var
