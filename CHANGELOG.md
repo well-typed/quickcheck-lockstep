@@ -9,6 +9,8 @@
   the model are printed in a counterexample. If verbosity is enabled, the
   counterexample will also include all responses from the real system and the
   model.
+* NON-BREAKING: Add a new `shrinkVar` function and `ModelShrinkVar` type alias.
+  Use `shrinkVar` to shrink variables to earlier variables of the same type.
 * PATCH: allow building with `ghc-9.12`
 
 ## 0.6.0 -- 2024-12-03

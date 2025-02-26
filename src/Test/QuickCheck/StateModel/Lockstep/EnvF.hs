@@ -12,6 +12,7 @@ module Test.QuickCheck.StateModel.Lockstep.EnvF (
     -- * Query
   , lookup
   , keysOfType
+  , shrinkVar
   ) where
 
 import Prelude hiding (lookup)
@@ -57,3 +58,11 @@ lookup = \var (EnvF env) ->
 
 keysOfType :: Typeable a => EnvF f -> [Var a]
 keysOfType (EnvF env) = mapMaybe (\(EnvEntry var _) -> cast var) env
+
+-- | Shrink a variable to variables of the same type, but with a smaller
+-- variable number.
+--
+-- The numbering of variables is according to their age, meaning that this
+-- function shrinks a variable to /earlier/ variables.
+shrinkVar :: Typeable a => EnvF f -> Var a -> [Var a]
+shrinkVar envf v = [ v' | v' <- keysOfType envf, v' < v ]

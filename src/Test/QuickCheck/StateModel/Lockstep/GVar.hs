@@ -15,6 +15,7 @@ module Test.QuickCheck.StateModel.Lockstep.GVar (
     -- * Interop with 'EnvF'
   , lookUpEnvF
   , definedInEnvF
+  , shrinkGVar
   ) where
 
 import Prelude hiding (map)
@@ -116,3 +117,8 @@ lookUpEnvF env (GVar var op) = fromJust $
 definedInEnvF :: (Typeable f, InterpretOp op f) => EnvF f -> GVar op a -> Bool
 definedInEnvF env (GVar var op) = isJust $
     EnvF.lookup var env >>= intOp op
+
+-- | Shrink a 'GVar' to earlier 'GVar's of the same type.
+shrinkGVar :: EnvF f -> GVar op a -> [GVar op a]
+shrinkGVar env (GVar var op) =
+    [ GVar var' op | var' <- EnvF.shrinkVar env var ]
