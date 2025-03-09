@@ -189,8 +189,7 @@ type ModelLookUp state = forall a. ModelVar state a -> ModelValue state a
 -- | Find variables of the appropriate type
 --
 -- The type you pass must be the result type of (previously executed) actions.
--- If you want to change the type of the variable, see
--- 'StateModel.Lockstep.GVar.map'.
+-- If you want to change the type of the variable, see 'EnvF.mapGVar'.
 type ModelFindVariables state = forall a.
           Typeable a
        => Proxy a -> [GVar (ModelOp state) a]
