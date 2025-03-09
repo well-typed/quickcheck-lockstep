@@ -74,7 +74,7 @@ library
   build-depends:
     , base                >=4.14   && <4.22
     , constraints         ^>=0.13  || ^>=0.14
-    , containers          ^>=0.6   || ^>=0.7
+    , containers          ^>=0.6   || ^>=0.7  || ^>=0.8
     , mtl                 ^>=2.2   || ^>=2.3
     , QuickCheck          ^>=2.14  || ^>=2.15
     , quickcheck-dynamic  ^>=3.4.1

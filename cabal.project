@@ -3,3 +3,6 @@ packages: .
 package quickcheck-lockstep
   tests: True
 
+-- TODO: remove once hashable supports containers-0.8
+allow-newer:
+  hashable:containers
