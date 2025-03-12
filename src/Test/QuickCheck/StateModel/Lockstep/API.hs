@@ -28,7 +28,7 @@ import Data.Kind
 import Data.Typeable
 
 import Test.QuickCheck (Gen)
-import Test.QuickCheck.StateModel (StateModel, Any, RunModel, Realized, Action)
+import Test.QuickCheck.StateModel (StateModel, Any, RunModel, Action)
 
 import Test.QuickCheck.StateModel.Lockstep.EnvF (EnvF)
 import Test.QuickCheck.StateModel.Lockstep.GVar (GVar, AnyGVar(..), fromVar)
@@ -162,7 +162,7 @@ class ( InLockstep state
   -- See also 'Observable'
   observeReal ::
        Proxy m
-    -> LockstepAction state a -> Realized m a -> Observable state a
+    -> LockstepAction state a -> a -> Observable state a
 
   -- | Show responses from the real system
   --
@@ -171,7 +171,7 @@ class ( InLockstep state
   showRealResponse ::
        Proxy m
     -> LockstepAction state a
-    -> Maybe (Dict (Show (Realized m a)))
+    -> Maybe (Dict (Show a))
   showRealResponse _ _ = Nothing
 
 {-------------------------------------------------------------------------------

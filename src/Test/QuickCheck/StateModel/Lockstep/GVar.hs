@@ -20,12 +20,14 @@ module Test.QuickCheck.StateModel.Lockstep.GVar (
 
 import Prelude hiding (map)
 
+import Control.Monad.Identity
+
 import Data.Maybe (isJust, fromJust)
 import Data.Typeable
 
 import GHC.Show
 
-import Test.QuickCheck.StateModel (Var, LookUp, Realized, HasVariables (..))
+import Test.QuickCheck.StateModel (Var, LookUp, HasVariables (..))
 
 import Test.QuickCheck.StateModel.Lockstep.EnvF (EnvF)
 import Test.QuickCheck.StateModel.Lockstep.EnvF qualified as EnvF
@@ -88,18 +90,16 @@ mapGVar f (GVar var op) = GVar var (f op)
   Interop with 'Env'
 -------------------------------------------------------------------------------}
 
-lookUpWrapped :: Typeable a => Proxy m -> LookUp m -> Var a -> WrapRealized m a
-lookUpWrapped _ m v = WrapRealized (m v)
+lookUpWrapped :: Typeable a => LookUp -> Var a -> Identity a
+lookUpWrapped m v = Identity (m v)
 
 -- | Lookup 'GVar' given a lookup function for 'Var'
 --
 -- The variable must be in the environment and evaluation must succeed.
 -- This is normally guaranteed by the default test 'precondition'.
-lookUpGVar ::
-     InterpretOp op (WrapRealized m)
-  => Proxy m -> LookUp m -> GVar op a -> Realized m a
-lookUpGVar p lookUp (GVar var op) =
-    unwrapRealized $ fromJust $ intOp op (lookUpWrapped p lookUp var)
+lookUpGVar :: InterpretOp op Identity => LookUp -> GVar op a -> a
+lookUpGVar lookUp (GVar var op) =
+    runIdentity $ fromJust $ intOp op (lookUpWrapped lookUp var)
 
 {-------------------------------------------------------------------------------
   Interop with EnvF

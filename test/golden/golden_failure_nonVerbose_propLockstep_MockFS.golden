@@ -1,12 +1,12 @@
-*** Failed! Assertion failed (after 40 tests and 9 shrinks):
-do var1 <- action $ Open (File {dir = Dir [], name = "t0"})
-   action $ Write (unsafeMkGVar var1 (OpFst `OpComp` OpRight `OpComp` OpId)) "BAACCCCCCBCCAAAABBBBCBBABACCACBABCCACCA"
-   action $ Close (unsafeMkGVar var1 (OpFst `OpComp` OpRight `OpComp` OpId))
-   action $ Read (Left (unsafeMkGVar var1 (OpSnd `OpComp` OpRight `OpComp` OpId)))
+*** Failed! Assertion failed (after 26 tests and 15 shrinks):
+do var4 <- action $ Open (File {dir = Dir [], name = "t0"})
+   action $ Write (unsafeMkGVar var4 (OpFst `OpComp` OpRight `OpComp` OpId)) "ABCAACBBBABAACCAAAACACACCB"
+   action $ Close (unsafeMkGVar var4 (OpFst `OpComp` OpRight `OpComp` OpId))
+   action $ Read (Left (unsafeMkGVar var4 (OpSnd `OpComp` OpRight `OpComp` OpId)))
    pure ()
 State: FsState {fsStateMock = M {dirs = fromList [Dir []], files = fromList [(File {dir = Dir [], name = "t0"},"")], open = fromList [(0,File {dir = Dir [], name = "t0"})], next = 1}, fsStateStats = fromList [File {dir = Dir [], name = "t0"}]}
-State: FsState {fsStateMock = M {dirs = fromList [Dir []], files = fromList [(File {dir = Dir [], name = "t0"},"BAACCCCCCBCCAAAABBBBCBBABACCACBABCCACCA")], open = fromList [(0,File {dir = Dir [], name = "t0"})], next = 1}, fsStateStats = fromList [File {dir = Dir [], name = "t0"}]}
-State: FsState {fsStateMock = M {dirs = fromList [Dir []], files = fromList [(File {dir = Dir [], name = "t0"},"BAACCCCCCBCCAAAABBBBCBBABACCACBABCCACCA")], open = fromList [], next = 1}, fsStateStats = fromList [File {dir = Dir [], name = "t0"}]}
-State: FsState {fsStateMock = M {dirs = fromList [Dir []], files = fromList [(File {dir = Dir [], name = "t0"},"BAACCCCCCBCCAAAABBBBCBBABACCACBABCCACCA")], open = fromList [], next = 1}, fsStateStats = fromList [File {dir = Dir [], name = "t0"}]}
+State: FsState {fsStateMock = M {dirs = fromList [Dir []], files = fromList [(File {dir = Dir [], name = "t0"},"ABCAACBBBABAACCAAAACACACCB")], open = fromList [(0,File {dir = Dir [], name = "t0"})], next = 1}, fsStateStats = fromList [File {dir = Dir [], name = "t0"}]}
+State: FsState {fsStateMock = M {dirs = fromList [Dir []], files = fromList [(File {dir = Dir [], name = "t0"},"ABCAACBBBABAACCAAAACACACCB")], open = fromList [], next = 1}, fsStateStats = fromList [File {dir = Dir [], name = "t0"}]}
+State: FsState {fsStateMock = M {dirs = fromList [Dir []], files = fromList [(File {dir = Dir [], name = "t0"},"ABCAACBBBABAACCAAAACACACCB")], open = fromList [], next = 1}, fsStateStats = fromList [File {dir = Dir [], name = "t0"}]}
 System under test returned: OEither (Right (OId "")) (Right "")
-but model returned:         OEither (Right (OId "BAACCCCCCBCCAAAABBBBCBBABACCACBABCCACCA")) (MEither (Right (MString "BAACCCCCCBCCAAAABBBBCBBABACCACBABCCACCA")))
+but model returned:         OEither (Right (OId "ABCAACBBBABAACCAAAACACACCB")) (MEither (Right (MString "ABCAACBBBABAACCAAAACACACCB")))

@@ -1,19 +1,32 @@
 +++ OK, passed 100 tests.
 
-Action polarity (2489 in total):
+# of actions (100 in total):
+48% "0 - 9"
+18% "10 - 19"
+10% "20 - 29"
+ 7% "30 - 39"
+ 5% "40 - 49"
+ 3% "60 - 69"
+ 3% "80 - 89"
+ 2% "100 - 199"
+ 2% "70 - 79"
+ 1% "200 - 299"
+ 1% "90 - 99"
+
+Action polarity (2329 in total):
 100.00% +
 
-Actions (2489 in total):
-30.33% +MkDir
-28.93% +Open
-27.92% +Read
- 6.79% +Write
- 6.03% +Close
+Actions (2329 in total):
+28.90% +MkDir
+28.55% +Open
+28.47% +Read
+ 7.13% +Write
+ 6.96% +Close
 
-Actions rejected by precondition (958 in total):
-52.0% Close
-48.0% Write
+Actions rejected by precondition (789 in total):
+51.1% Write
+48.9% Close
 
-Tags (428 in total):
+Tags (427 in total):
 92.3% OpenTwo
  7.7% SuccessfulRead

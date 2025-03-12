@@ -93,7 +93,7 @@ labelActions (Actions steps) =
 
 runActions ::
      ( RunLockstep state IO
-     , e ~ Error (Lockstep state)
+     , e ~ Error (Lockstep state) IO
      , forall a. IsPerformResult e a
      )
   => Proxy state
@@ -110,7 +110,7 @@ runActions _ actions = monadicIO $ void $ StateModel.runActions  actions
 -- is a reasonable choice.
 runActionsBracket ::
      ( RunLockstep state m
-     , e ~ Error (Lockstep state)
+     , e ~ Error (Lockstep state) m
      , forall a. IsPerformResult e a
      )
   => Proxy state

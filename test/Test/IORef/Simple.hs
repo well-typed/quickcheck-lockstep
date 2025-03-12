@@ -147,7 +147,7 @@ deriving instance Eq (ModelValue M a)
 
 type RealMonad = IO
 
-runIO :: Action (Lockstep M) a -> LookUp RealMonad -> RealMonad a
+runIO :: Action (Lockstep M) a -> LookUp -> RealMonad a
 runIO action lookUp =
     case action of
       New       -> newIORef 0
@@ -155,7 +155,7 @@ runIO action lookUp =
       Read  v   -> readIORef (lookUpRef v)
   where
     lookUpRef :: ModelVar M (IORef Int) -> IORef Int
-    lookUpRef = lookUpGVar (Proxy @RealMonad) lookUp
+    lookUpRef = lookUpGVar lookUp
 
 runModel ::
      Action (Lockstep M) a
