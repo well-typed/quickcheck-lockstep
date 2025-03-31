@@ -24,6 +24,7 @@ module Test.QuickCheck.StateModel.Lockstep (
   , ModelVar
     -- * Variable context
   , ModelVarContext
+  , getModelVarContext
   , lookupVar
   , findVars
   , shrinkVar

@@ -18,6 +18,7 @@ module Test.QuickCheck.StateModel.Lockstep.API (
   , ModelShrinkVar
     -- * Variable context
   , ModelVarContext
+  , getModelVarContext
   , findVars
   , lookupVar
   , shrinkVar
@@ -210,6 +211,9 @@ type ModelVar state = GVar (ModelOp state)
 -- 'findVars' and 'lookupVar'. This environment is updated automically by the
 -- lockstep framework.
 type ModelVarContext state = EnvF (ModelValue state)
+
+getModelVarContext :: Lockstep state -> ModelVarContext state
+getModelVarContext (Lockstep _ vctx) = vctx
 
 -- | See 'ModelFindVariables'.
 findVars ::
