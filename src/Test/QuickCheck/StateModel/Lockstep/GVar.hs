@@ -23,7 +23,7 @@ module Test.QuickCheck.StateModel.Lockstep.GVar (
 
 import Prelude hiding (map)
 
-import Data.Maybe (isJust, fromJust)
+import Data.Maybe (isJust)
 import Data.Typeable
 
 import GHC.Show
@@ -96,13 +96,13 @@ lookUpWrapped _ m v = WrapRealized (m v)
 
 -- | Lookup 'GVar' given a lookup function for 'Var'
 --
--- The variable must be in the environment and evaluation must succeed.
--- This is normally guaranteed by the default test 'precondition'.
+-- The result is 'Just' if the variable is in the environment and evaluation
+-- succeeds. This is normally guaranteed by the default test 'precondition'.
 lookUpGVar ::
      InterpretOp op (WrapRealized m)
-  => Proxy m -> LookUp m -> GVar op a -> Realized m a
+  => Proxy m -> LookUp m -> GVar op a -> Maybe (Realized m a)
 lookUpGVar p lookUp (GVar var op) =
-    unwrapRealized $ fromJust $ intOp op (lookUpWrapped p lookUp var)
+    unwrapRealized <$> intOp op (lookUpWrapped p lookUp var)
 
 {-------------------------------------------------------------------------------
   Interop with EnvF
@@ -110,16 +110,15 @@ lookUpGVar p lookUp (GVar var op) =
 
 -- | Lookup 'GVar'
 --
--- The variable must be in the environment and evaluation must succeed.
--- This is normally guaranteed by the default test 'precondition'.
-lookUpEnvF :: (Typeable f, InterpretOp op f) => EnvF f -> GVar op a -> f a
-lookUpEnvF env (GVar var op) = fromJust $
+-- The result is 'Just' if the variable is in the environment and evaluation
+-- succeeds. This is normally guaranteed by the default test 'precondition'.
+lookUpEnvF :: (Typeable f, InterpretOp op f) => EnvF f -> GVar op a -> Maybe (f a)
+lookUpEnvF env (GVar var op) =
     EnvF.lookup var env >>= intOp op
 
 -- | Check if the variable is well-defined and evaluation will succeed.
 definedInEnvF :: (Typeable f, InterpretOp op f) => EnvF f -> GVar op a -> Bool
-definedInEnvF env (GVar var op) = isJust $
-    EnvF.lookup var env >>= intOp op
+definedInEnvF env gvar = isJust (lookUpEnvF env gvar)
 
 -- | Shrink a 'GVar' to earlier 'GVar's of the same type. It is guaranteed that
 -- the shrunk variables are in the environment and that evaluation will succeed.

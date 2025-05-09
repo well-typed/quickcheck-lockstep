@@ -16,11 +16,13 @@ module Test.QuickCheck.StateModel.Lockstep.API (
   , ModelLookUp
   , ModelVar
   , ModelShrinkVar
+  , RealLookUp
     -- * Variable context
   , ModelVarContext
   , findVars
   , lookupVar
   , shrinkVar
+  , realLookupVar
   ) where
 
 import Data.Constraint (Dict(..))
@@ -28,7 +30,7 @@ import Data.Kind
 import Data.Typeable
 
 import Test.QuickCheck (Gen)
-import Test.QuickCheck.StateModel (StateModel, Any, RunModel, Realized, Action)
+import Test.QuickCheck.StateModel (StateModel, Any, RunModel, Realized, Action, LookUp)
 
 import Test.QuickCheck.StateModel.Lockstep.EnvF (EnvF)
 import Test.QuickCheck.StateModel.Lockstep.GVar (GVar, AnyGVar(..), fromVar)
@@ -181,21 +183,19 @@ class ( InLockstep state
 -- | An action in the lock-step model
 type LockstepAction state = Action (Lockstep state)
 
--- | Look up a variable for model execution
---
--- The type of the variable is the type in the /real/ system.
+-- | See 'lookupVar'.
 type ModelLookUp state = forall a. ModelVar state a -> ModelValue state a
 
--- | Find variables of the appropriate type
---
--- The type you pass must be the result type of (previously executed) actions.
--- If you want to change the type of the variable, see 'EnvF.mapGVar'.
+-- | See 'findVars'.
 type ModelFindVariables state = forall a.
           Typeable a
        => Proxy a -> [GVar (ModelOp state) a]
 
--- | Shrink variables to /earlier/ variables of the same type.
-type ModelShrinkVar state a = ModelVar state a -> [ModelVar state a]
+-- | See 'shrinkVar'.
+type ModelShrinkVar state = forall a. ModelVar state a -> [ModelVar state a]
+
+-- | See 'realLookupVar'.
+type RealLookUp m op = forall a. Proxy m -> LookUp m -> GVar op a -> Realized m a
 
 -- | Variables with a "functor-esque" instance
 type ModelVar state = GVar (ModelOp state)
@@ -207,24 +207,45 @@ type ModelVar state = GVar (ModelOp state)
 -- | The environment of known variables and their (model) values.
 --
 -- This environment can be queried for information about known variables through
--- 'findVars' and 'lookupVar'. This environment is updated automically by the
--- lockstep framework.
+-- 'findVars', 'lookupVar', and 'shrinkVar'. This environment is updated
+-- automically by the lockstep framework.
 type ModelVarContext state = EnvF (ModelValue state)
 
--- | See 'ModelFindVariables'.
+-- | Find variables of the appropriate type
+--
+-- The type you pass must be the result type of (previously executed) actions.
+-- If you want to change the type of the variable, see 'EnvF.mapGVar'.
 findVars ::
      InLockstep state
   => ModelVarContext state -> ModelFindVariables state
 findVars env _ = map fromVar $ EnvF.keysOfType env
 
--- | See 'ModelLookUp'.
+-- | Look up a variable for execution of the model.
+--
+-- The type of the variable is the type in the /real/ system.
 lookupVar ::
      InLockstep state
   => ModelVarContext state -> ModelLookUp state
-lookupVar env = EnvF.lookUpEnvF env
+lookupVar env gvar = case EnvF.lookUpEnvF env gvar of
+    Just x -> x
+    Nothing -> error
+      "lookupVar: the variable (ModelVar) must be well-defined and evaluable, \
+      \but this requirement was violated. Normally, this is guaranteed by the \
+      \default test 'precondition'."
 
--- | See 'ModelShrinkVar'.
+-- | Shrink variables to /earlier/ variables of the same type.
 shrinkVar ::
      (Typeable state, InterpretOp (ModelOp state) (ModelValue state))
-  => ModelVarContext state -> ModelShrinkVar state a
+  => ModelVarContext state -> ModelShrinkVar state
 shrinkVar env var = EnvF.shrinkGVar env var
+
+-- | Look up a variable for execution of the real system.
+--
+-- The type of the variable is the type in the /real/ system.
+realLookupVar :: InterpretOp op (WrapRealized m) => RealLookUp m op
+realLookupVar p lookUp gvar = case EnvF.lookUpGVar p lookUp gvar of
+    Just x -> x
+    Nothing -> error
+      "realLookupVar: the variable (GVar) must be well-defined and evaluable, \
+      \but this requirement was violated. Normally, this is guaranteed by the \
+      \default test 'precondition'."

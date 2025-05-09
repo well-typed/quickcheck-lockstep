@@ -351,7 +351,7 @@ runIO action lookUp = ReaderT $ \root -> aux root action
             _                     -> pure s
       where
         lookUp' :: FsVar x -> x
-        lookUp' = lookUpGVar (Proxy @RealMonad) lookUp
+        lookUp' = realLookupVar (Proxy @RealMonad) lookUp
 
 catchErr :: forall a. IO a -> IO (Either Err a)
 catchErr act = catch (Right <$> act) handler

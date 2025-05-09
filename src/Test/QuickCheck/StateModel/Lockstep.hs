@@ -22,16 +22,17 @@ module Test.QuickCheck.StateModel.Lockstep (
   , ModelLookUp
   , ModelShrinkVar
   , ModelVar
+  , RealLookUp
     -- * Variable context
   , ModelVarContext
   , lookupVar
   , findVars
   , shrinkVar
+  , realLookupVar
     -- * Variables
   , GVar -- opaque
   , AnyGVar(..)
   , unsafeMkGVar
-  , lookUpGVar
   , mapGVar
     -- ** Operations
   , Operation(..)
