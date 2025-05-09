@@ -1,6 +1,6 @@
 # Revision history for quickcheck-lockstep
 
-## ?.?.? -- ????-??-??
+## 0.7.0 -- 2025-05-09
 
 * BREAKING: Rename `lookupGVar` to `realLookupVar`, and add a `RealLookup`
   convenience alias that is used in the type of `RealLookupVar`. The type of
