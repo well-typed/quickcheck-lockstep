@@ -99,7 +99,7 @@ test-suite test-quickcheck-lockstep
 
   -- Version bounds determined by main lib
   build-depends:
-    , base
+    , base < 5
     , constraints
     , containers
     , directory
@@ -131,7 +131,7 @@ test-suite test-internals
 
   -- Version bounds determined by main lib
   build-depends:
-    , base
+    , base < 5
     , quickcheck-dynamic
     , tasty
     , mtl
