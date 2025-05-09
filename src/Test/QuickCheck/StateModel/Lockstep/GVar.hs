@@ -1,3 +1,4 @@
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 -- | Generalized variables
@@ -16,6 +17,8 @@ module Test.QuickCheck.StateModel.Lockstep.GVar (
   , lookUpEnvF
   , definedInEnvF
   , shrinkGVar
+    -- * Internal: exposed for testing
+  , pattern GVar
   ) where
 
 import Prelude hiding (map)
@@ -38,7 +41,7 @@ import Test.QuickCheck.StateModel.Lockstep.Op
 -- | Generalized variables
 --
 -- The key difference between 'GVar' and the standard 'Var' type is that
--- 'GVar' have a functor-esque structure: see 'map'.
+-- 'GVar' have a functor-esque structure: see 'mapGVar'.
 data GVar op f where
   GVar :: Typeable x => Var x -> op x y -> GVar op y
 
@@ -118,7 +121,12 @@ definedInEnvF :: (Typeable f, InterpretOp op f) => EnvF f -> GVar op a -> Bool
 definedInEnvF env (GVar var op) = isJust $
     EnvF.lookup var env >>= intOp op
 
--- | Shrink a 'GVar' to earlier 'GVar's of the same type.
-shrinkGVar :: EnvF f -> GVar op a -> [GVar op a]
+-- | Shrink a 'GVar' to earlier 'GVar's of the same type. It is guaranteed that
+-- the shrunk variables are in the environment and that evaluation will succeed.
+shrinkGVar :: (Typeable f, InterpretOp op f)  => EnvF f -> GVar op a -> [GVar op a]
 shrinkGVar env (GVar var op) =
-    [ GVar var' op | var' <- EnvF.shrinkVar env var ]
+    [ gvar'
+    | var' <- EnvF.shrinkVar env var
+    , let gvar' = GVar var' op
+    , definedInEnvF env gvar'
+    ]
