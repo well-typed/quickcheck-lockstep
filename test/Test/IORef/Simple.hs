@@ -155,7 +155,7 @@ runIO action lookUp =
       Read  v   -> readIORef (lookUpRef v)
   where
     lookUpRef :: ModelVar M (IORef Int) -> IORef Int
-    lookUpRef = lookUpGVar (Proxy @RealMonad) lookUp
+    lookUpRef = realLookupVar (Proxy @RealMonad) lookUp
 
 runModel ::
      Action (Lockstep M) a

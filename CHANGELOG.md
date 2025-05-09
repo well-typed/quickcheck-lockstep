@@ -2,6 +2,15 @@
 
 ## ?.?.? -- ????-??-??
 
+* BREAKING: Rename `lookupGVar` to `realLookupVar`, and add a `RealLookup`
+  convenience alias that is used in the type of `RealLookupVar`. The type of
+  `realLookupVar` is slightly different than the type of `lookupGVar`, but only
+  in the positions of universal quantification over types.
+* NON-BREAKING: improved error messages for `realLookupVar` and `lookupVar`,
+  which might throw an error when variables are ill-defined or unevaluable.
+* PATCH: some documentation is moved from convenience aliases like
+  `ModelFindVariables` to the functions have these aliases in their type, like
+  `findVars`.
 * BREAKING: Enable verbose counterexamples by default in the 'postcondition'
   function using 'postconditionWith'.
 * NON-BREAKING: Add a new 'postconditionWith' function that can be configured to
