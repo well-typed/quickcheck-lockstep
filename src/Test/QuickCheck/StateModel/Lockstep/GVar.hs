@@ -121,7 +121,12 @@ definedInEnvF :: (Typeable f, InterpretOp op f) => EnvF f -> GVar op a -> Bool
 definedInEnvF env (GVar var op) = isJust $
     EnvF.lookup var env >>= intOp op
 
--- | Shrink a 'GVar' to earlier 'GVar's of the same type.
-shrinkGVar :: EnvF f -> GVar op a -> [GVar op a]
+-- | Shrink a 'GVar' to earlier 'GVar's of the same type. It is guaranteed that
+-- the shrunk variables are in the environment and that evaluation will succeed.
+shrinkGVar :: (Typeable f, InterpretOp op f)  => EnvF f -> GVar op a -> [GVar op a]
 shrinkGVar env (GVar var op) =
-    [ GVar var' op | var' <- EnvF.shrinkVar env var ]
+    [ gvar'
+    | var' <- EnvF.shrinkVar env var
+    , let gvar' = GVar var' op
+    , definedInEnvF env gvar'
+    ]

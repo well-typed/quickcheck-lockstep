@@ -224,5 +224,7 @@ lookupVar ::
 lookupVar env = EnvF.lookUpEnvF env
 
 -- | See 'ModelShrinkVar'.
-shrinkVar :: ModelVarContext state -> ModelShrinkVar state a
+shrinkVar ::
+     (Typeable state, InterpretOp (ModelOp state) (ModelValue state))
+  => ModelVarContext state -> ModelShrinkVar state a
 shrinkVar env var = EnvF.shrinkGVar env var
