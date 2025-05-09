@@ -1,3 +1,5 @@
+{-# LANGUAGE PatternSynonyms #-}
+
 -- | Environment parameterised by functor @f@
 --
 -- Intended for qualified import:
@@ -13,6 +15,9 @@ module Test.QuickCheck.StateModel.Lockstep.EnvF (
   , lookup
   , keysOfType
   , shrinkVar
+    -- * Internal: exposed for testing
+  , pattern EnvF
+  , EnvEntry (..)
   ) where
 
 import Prelude hiding (lookup)

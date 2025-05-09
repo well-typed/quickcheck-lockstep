@@ -1,3 +1,4 @@
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 -- | Generalized variables
@@ -16,6 +17,8 @@ module Test.QuickCheck.StateModel.Lockstep.GVar (
   , lookUpEnvF
   , definedInEnvF
   , shrinkGVar
+    -- * Internal: exposed for testing
+  , pattern GVar
   ) where
 
 import Prelude hiding (map)
@@ -38,7 +41,7 @@ import Test.QuickCheck.StateModel.Lockstep.Op
 -- | Generalized variables
 --
 -- The key difference between 'GVar' and the standard 'Var' type is that
--- 'GVar' have a functor-esque structure: see 'map'.
+-- 'GVar' have a functor-esque structure: see 'mapGVar'.
 data GVar op f where
   GVar :: Typeable x => Var x -> op x y -> GVar op y
 
