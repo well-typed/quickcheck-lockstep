@@ -20,6 +20,7 @@ module Test.QuickCheck.StateModel.Lockstep.API (
     -- * Variable context
   , ModelVarContext
   , findVars
+  , findVarsBefore
   , lookupVar
   , shrinkVar
   , realLookupVar
@@ -30,10 +31,10 @@ import Data.Kind
 import Data.Typeable
 
 import Test.QuickCheck (Gen)
-import Test.QuickCheck.StateModel (StateModel, Any, RunModel, Realized, Action, LookUp)
+import Test.QuickCheck.StateModel (StateModel, Any (Some), RunModel, Realized, Action, LookUp)
 
 import Test.QuickCheck.StateModel.Lockstep.EnvF (EnvF)
-import Test.QuickCheck.StateModel.Lockstep.GVar (GVar, AnyGVar(..), fromVar)
+import Test.QuickCheck.StateModel.Lockstep.GVar (GVar(GVar), AnyGVar(..), fromVar)
 import Test.QuickCheck.StateModel.Lockstep.Op
 import Test.QuickCheck.StateModel.Lockstep.Op.Identity qualified as Identity
 import Test.QuickCheck.StateModel.Lockstep.EnvF qualified as EnvF
@@ -219,6 +220,9 @@ findVars ::
      InLockstep state
   => ModelVarContext state -> ModelFindVariables state
 findVars env _ = map fromVar $ EnvF.keysOfType env
+
+findVarsBefore :: Operation (ModelOp state) => ModelVarContext state -> AnyGVar (ModelOp state) -> ModelFindVariables state
+findVarsBefore env (SomeGVar (GVar v _)) _ = map fromVar $ EnvF.keysOfTypeBefore env (Some v)
 
 -- | Look up a variable for execution of the model.
 --

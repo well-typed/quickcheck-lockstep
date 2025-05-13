@@ -32,6 +32,7 @@ module Test.QuickCheck.StateModel.Lockstep (
     -- * Variables
   , GVar -- opaque
   , AnyGVar(..)
+  , compareVarNumber
   , unsafeMkGVar
   , mapGVar
     -- ** Operations

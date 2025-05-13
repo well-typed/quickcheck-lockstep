@@ -14,6 +14,7 @@ module Test.QuickCheck.StateModel.Lockstep.EnvF (
     -- * Query
   , lookup
   , keysOfType
+  , keysOfTypeBefore
   , shrinkVar
     -- * Internal: exposed for testing
   , pattern EnvF
@@ -27,7 +28,7 @@ import Data.Foldable (asum)
 import Data.Maybe (mapMaybe)
 import Data.Typeable
 
-import Test.QuickCheck.StateModel.Variables (Var, unsafeCoerceVar)
+import Test.QuickCheck.StateModel.Variables (Var, unsafeCoerceVar, Any (..))
 
 {-------------------------------------------------------------------------------
   Types
@@ -63,6 +64,9 @@ lookup = \var (EnvF env) ->
 
 keysOfType :: Typeable a => EnvF f -> [Var a]
 keysOfType (EnvF env) = mapMaybe (\(EnvEntry var _) -> cast var) env
+
+keysOfTypeBefore :: Typeable a => EnvF f -> Any Var -> [Var a]
+keysOfTypeBefore envf (Some v) = [ v' | v' <- keysOfType envf, v' < unsafeCoerceVar v]
 
 -- | Shrink a variable to variables of the same type, but with a smaller
 -- variable number.

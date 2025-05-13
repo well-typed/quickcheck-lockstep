@@ -7,6 +7,7 @@
 module Test.QuickCheck.StateModel.Lockstep.GVar (
     GVar -- opaque
   , AnyGVar(..)
+  , compareVarNumber
     -- * Construction
   , unsafeMkGVar
   , fromVar
@@ -28,7 +29,7 @@ import Data.Typeable
 
 import GHC.Show
 
-import Test.QuickCheck.StateModel (Var, LookUp, Realized, HasVariables (..))
+import Test.QuickCheck.StateModel (Var, LookUp, Realized, HasVariables (..), unsafeCoerceVar)
 
 import Test.QuickCheck.StateModel.Lockstep.EnvF (EnvF)
 import Test.QuickCheck.StateModel.Lockstep.EnvF qualified as EnvF
@@ -72,6 +73,9 @@ instance HasVariables (GVar op f) where
 
 instance HasVariables (AnyGVar op) where
   getAllVariables (SomeGVar v) = getAllVariables v
+
+compareVarNumber :: GVar op a -> GVar op b -> Ordering
+compareVarNumber (GVar v1 _) (GVar v2 _) = compare v1 (unsafeCoerceVar v2)
 
 {-------------------------------------------------------------------------------
   Construction
