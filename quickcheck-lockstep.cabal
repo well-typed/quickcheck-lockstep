@@ -92,6 +92,7 @@ test-suite test-quickcheck-lockstep
     Test.IORef.Simple
     Test.MockFS
     Test.MockFS.Mock
+    Test.NonDeterminism
     Test.NonDeterminism.Example
 
   default-extensions:
