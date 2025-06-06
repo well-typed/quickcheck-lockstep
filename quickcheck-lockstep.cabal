@@ -92,6 +92,7 @@ test-suite test-quickcheck-lockstep
     Test.IORef.Simple
     Test.MockFS
     Test.MockFS.Mock
+    Test.NonDeterminism.Example
 
   default-extensions:
     DeriveGeneric
@@ -99,7 +100,7 @@ test-suite test-quickcheck-lockstep
 
   -- Version bounds determined by main lib
   build-depends:
-    , base < 5
+    , base                 <5
     , constraints
     , containers
     , directory
@@ -108,6 +109,7 @@ test-suite test-quickcheck-lockstep
     , QuickCheck
     , quickcheck-dynamic
     , quickcheck-lockstep
+    , random
     , tasty
     , tasty-golden
     , tasty-hunit
@@ -126,14 +128,13 @@ test-suite test-internals
     Test.QuickCheck.StateModel.Lockstep.Op.SumProd
     Test.Test.QuickCheck.StateModel.Lockstep.GVar
 
-  ghc-options:
-    -Wno-prepositive-qualified-module
+  ghc-options:    -Wno-prepositive-qualified-module
 
   -- Version bounds determined by main lib
   build-depends:
-    , base < 5
+    , base                <5
+    , mtl
+    , QuickCheck
     , quickcheck-dynamic
     , tasty
-    , mtl
     , tasty-quickcheck
-    , QuickCheck
