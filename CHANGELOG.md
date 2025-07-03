@@ -8,7 +8,7 @@
   together with hints as to how to migrate from `quickcheck-lockstep-0.7` to
   `quickcheck-lockstep-0.8`. For migrating from `quickcheck-dynamic-3` to
   `quickcheck-dynamic-4`, see [the `quickcheck-dynamic-4`
-  changelog][q-d-4.0:hackage].
+  changelog](https://hackage.haskell.org/package/quickcheck-dynamic-4.0.0/changelog).
 
   - The `Realized` type family is removed.
 
@@ -52,9 +52,6 @@
 * PATCH: enable a bunch of GHC warnings
 * PATCH: use GHC2021, and if not available, enable all GHC2021 language
   extensions explicitly.
-
-[q-d-4:hackage]:https://hackage.haskell.org/package/quickcheck-dynamic-4.0.0/changelog
-[io-sim:hackage]:https://hackage.haskell.org/package/io-sim
 
 ## 0.7.0 -- 2025-05-09
 
