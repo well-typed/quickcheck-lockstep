@@ -1,5 +1,11 @@
 # Revision history for quickcheck-lockstep
 
+## 0.8.0 -- 2025-07-03
+
+* PATCH: enable a bunch of GHC warnings
+* PATCH: use GHC2021, and if not available, enable all GHC2021 language
+  extensions explicitly.
+
 ## 0.7.0 -- 2025-05-09
 
 * BREAKING: Rename `lookupGVar` to `realLookupVar`, and add a `RealLookup`

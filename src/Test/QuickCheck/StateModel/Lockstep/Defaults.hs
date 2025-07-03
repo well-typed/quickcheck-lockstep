@@ -18,21 +18,23 @@ module Test.QuickCheck.StateModel.Lockstep.Defaults (
   , monitoring
   ) where
 
-import Prelude hiding (init)
+import           Prelude hiding (init)
 
-import Data.Constraint (Dict(..))
-import Data.Set qualified as Set
-import Data.Typeable
+import           Data.Constraint (Dict (..))
+import qualified Data.Set as Set
+import           Data.Typeable
 
-import Test.QuickCheck (Gen, Property)
-import Test.QuickCheck qualified as QC
-import Test.QuickCheck.StateModel ( Var, Any(..), LookUp, Realized, PostconditionM
-                                  , Action, monitorPost, StateModel (Error))
-import Test.QuickCheck.StateModel.Variables (VarContext, HasVariables (..))
+import qualified Test.QuickCheck as QC
+import           Test.QuickCheck (Gen, Property)
+import           Test.QuickCheck.StateModel (Action, Any (..), LookUp,
+                     PostconditionM, Realized, StateModel (Error), Var,
+                     monitorPost)
+import           Test.QuickCheck.StateModel.Variables (HasVariables (..),
+                     VarContext)
 
-import Test.QuickCheck.StateModel.Lockstep.API
-import Test.QuickCheck.StateModel.Lockstep.EnvF qualified as EnvF
-import Test.QuickCheck.StateModel.Lockstep.GVar
+import           Test.QuickCheck.StateModel.Lockstep.API
+import qualified Test.QuickCheck.StateModel.Lockstep.EnvF as EnvF
+import           Test.QuickCheck.StateModel.Lockstep.GVar
 
 {-------------------------------------------------------------------------------
   Default implementations for members of 'StateModel'

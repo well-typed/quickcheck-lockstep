@@ -20,14 +20,14 @@ module Test.QuickCheck.StateModel.Lockstep.EnvF (
   , EnvEntry (..)
   ) where
 
-import Prelude hiding (lookup)
+import           Prelude hiding (lookup)
 
-import Control.Monad
-import Data.Foldable (asum)
-import Data.Maybe (mapMaybe)
-import Data.Typeable
+import           Control.Monad
+import           Data.Foldable (asum)
+import           Data.Maybe (mapMaybe)
+import           Data.Typeable
 
-import Test.QuickCheck.StateModel.Variables (Var, unsafeCoerceVar)
+import           Test.QuickCheck.StateModel.Variables (Var, unsafeCoerceVar)
 
 {-------------------------------------------------------------------------------
   Types

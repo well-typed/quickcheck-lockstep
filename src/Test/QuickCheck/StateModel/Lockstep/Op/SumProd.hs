@@ -1,11 +1,11 @@
 module Test.QuickCheck.StateModel.Lockstep.Op.SumProd (Op(..), intOpId) where
 
-import Control.Monad ((<=<))
-import Control.Monad.Reader (ReaderT)
-import Control.Monad.State (StateT)
-import GHC.Show (appPrec)
+import           Control.Monad ((<=<))
+import           Control.Monad.Reader (ReaderT)
+import           Control.Monad.State (StateT)
+import           GHC.Show (appPrec)
 
-import Test.QuickCheck.StateModel.Lockstep.Op
+import           Test.QuickCheck.StateModel.Lockstep.Op
 
 {-------------------------------------------------------------------------------
   Example (but very useful) 'Operation' example

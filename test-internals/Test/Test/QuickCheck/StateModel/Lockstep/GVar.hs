@@ -2,18 +2,15 @@
 
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module Test.Test.QuickCheck.StateModel.Lockstep.GVar where
+module Test.Test.QuickCheck.StateModel.Lockstep.GVar (tests) where
 
-import           Data.Data                                      (eqT,
-                                                                 (:~:) (Refl))
+import           Data.Data (eqT, (:~:) (Refl))
 import           Data.Functor.Identity
-import           Test.QuickCheck.StateModel.Lockstep.EnvF       hiding
-                                                                (shrinkVar)
+import           Test.QuickCheck.StateModel.Lockstep.EnvF hiding (shrinkVar)
 import           Test.QuickCheck.StateModel.Lockstep.GVar
 import           Test.QuickCheck.StateModel.Lockstep.Op
 import           Test.QuickCheck.StateModel.Lockstep.Op.SumProd
-import           Test.QuickCheck.StateModel.Variables           hiding
-                                                                (shrinkVar)
+import           Test.QuickCheck.StateModel.Variables hiding (shrinkVar)
 import           Test.Tasty
 import           Test.Tasty.QuickCheck
 

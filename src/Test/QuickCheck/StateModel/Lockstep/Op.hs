@@ -8,8 +8,8 @@ module Test.QuickCheck.StateModel.Lockstep.Op (
   , intOpTransformer
   ) where
 
-import Test.QuickCheck.StateModel (Realized)
-import Data.Coerce
+import           Data.Coerce
+import           Test.QuickCheck.StateModel (Realized)
 
 {-------------------------------------------------------------------------------
   Operations

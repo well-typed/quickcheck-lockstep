@@ -1,5 +1,6 @@
-{-# LANGUAGE PatternSynonyms #-}
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE PatternSynonyms       #-}
+{-# LANGUAGE QuantifiedConstraints #-}
+{-# LANGUAGE UndecidableInstances  #-}
 
 -- | Generalized variables
 --
@@ -21,18 +22,19 @@ module Test.QuickCheck.StateModel.Lockstep.GVar (
   , pattern GVar
   ) where
 
-import Prelude hiding (map)
+import           Prelude hiding (map)
 
-import Data.Maybe (isJust)
-import Data.Typeable
+import           Data.Maybe (isJust)
+import           Data.Typeable
 
-import GHC.Show
+import           GHC.Show
 
-import Test.QuickCheck.StateModel (Var, LookUp, Realized, HasVariables (..))
+import           Test.QuickCheck.StateModel (HasVariables (..), LookUp,
+                     Realized, Var)
 
-import Test.QuickCheck.StateModel.Lockstep.EnvF (EnvF)
-import Test.QuickCheck.StateModel.Lockstep.EnvF qualified as EnvF
-import Test.QuickCheck.StateModel.Lockstep.Op
+import qualified Test.QuickCheck.StateModel.Lockstep.EnvF as EnvF
+import           Test.QuickCheck.StateModel.Lockstep.EnvF (EnvF)
+import           Test.QuickCheck.StateModel.Lockstep.Op
 
 {-------------------------------------------------------------------------------
   Main type

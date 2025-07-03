@@ -1,4 +1,5 @@
-{- HLINT ignore "Eta reduce" -}
+{-# LANGUAGE QuantifiedConstraints #-}
+{-# LANGUAGE TypeFamilies          #-}
 
 -- | Public API
 --
@@ -25,19 +26,21 @@ module Test.QuickCheck.StateModel.Lockstep.API (
   , realLookupVar
   ) where
 
-import Data.Constraint (Dict(..))
-import Data.Kind
-import Data.Typeable
+import           Data.Constraint (Dict (..))
+import           Data.Kind
+import           Data.Typeable
 
-import Test.QuickCheck (Gen)
-import Test.QuickCheck.StateModel (StateModel, Any, RunModel, Realized, Action, LookUp)
+import           Test.QuickCheck (Gen)
+import           Test.QuickCheck.StateModel (Action, Any, LookUp, Realized,
+                     RunModel, StateModel)
 
-import Test.QuickCheck.StateModel.Lockstep.EnvF (EnvF)
-import Test.QuickCheck.StateModel.Lockstep.GVar (GVar, AnyGVar(..), fromVar)
-import Test.QuickCheck.StateModel.Lockstep.Op
-import Test.QuickCheck.StateModel.Lockstep.Op.Identity qualified as Identity
-import Test.QuickCheck.StateModel.Lockstep.EnvF qualified as EnvF
-import Test.QuickCheck.StateModel.Lockstep.GVar qualified as EnvF
+import qualified Test.QuickCheck.StateModel.Lockstep.EnvF as EnvF
+import           Test.QuickCheck.StateModel.Lockstep.EnvF (EnvF)
+import qualified Test.QuickCheck.StateModel.Lockstep.GVar as EnvF
+import           Test.QuickCheck.StateModel.Lockstep.GVar (AnyGVar (..), GVar,
+                     fromVar)
+import           Test.QuickCheck.StateModel.Lockstep.Op
+import qualified Test.QuickCheck.StateModel.Lockstep.Op.Identity as Identity
 
 {-------------------------------------------------------------------------------
   Lockstep state

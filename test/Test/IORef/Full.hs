@@ -1,28 +1,29 @@
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TypeFamilies    #-}
 
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 module Test.IORef.Full (tests) where
 
-import Control.Monad.Reader
-import Data.Bifunctor
-import Data.Constraint (Dict(..))
-import Data.IORef
-import Data.Map (Map)
-import Data.Map qualified as Map
-import Data.Proxy
-import Test.QuickCheck
-import Test.Tasty
-import Test.Tasty.HUnit
-import Test.Tasty.QuickCheck (testProperty)
+import           Control.Monad.Reader
+import           Data.Bifunctor
+import           Data.Constraint (Dict (..))
+import           Data.IORef
+import           Data.Map (Map)
+import qualified Data.Map as Map
+import           Data.Proxy
+import           Test.QuickCheck
+import           Test.Tasty
+import           Test.Tasty.HUnit
+import           Test.Tasty.QuickCheck (testProperty)
 
-import Test.QuickCheck qualified as QC
+import qualified Test.QuickCheck as QC
 
-import Test.QuickCheck.StateModel
-import Test.QuickCheck.StateModel.Lockstep
-import Test.QuickCheck.StateModel.Lockstep.Defaults qualified as Lockstep
-import Test.QuickCheck.StateModel.Lockstep.Run qualified as Lockstep
-import Test.QuickCheck.StateModel.Lockstep.Run (labelActions)
+import           Test.QuickCheck.StateModel
+import           Test.QuickCheck.StateModel.Lockstep
+import qualified Test.QuickCheck.StateModel.Lockstep.Defaults as Lockstep
+import qualified Test.QuickCheck.StateModel.Lockstep.Run as Lockstep
+import           Test.QuickCheck.StateModel.Lockstep.Run (labelActions)
 
 {-------------------------------------------------------------------------------
   Model "M"
@@ -39,7 +40,7 @@ data M = M {
       -- This is used for tagging.
     , mWrites :: Map (MRef, Int) Int
     }
-  deriving (Show)
+  deriving stock (Show)
 
 initModel :: M
 initModel = M {
@@ -174,20 +175,20 @@ instance RunLockstep M RealMonad where
     Write{} -> Just Dict
     Read{}  -> Just Dict
 
-deriving instance Show (Action (Lockstep M) a)
-deriving instance Show (Observable M a)
-deriving instance Show (ModelValue M a)
+deriving stock instance Show (Action (Lockstep M) a)
+deriving stock instance Show (Observable M a)
+deriving stock instance Show (ModelValue M a)
 
-deriving instance Eq (Action (Lockstep M) a)
-deriving instance Eq (Observable M a)
-deriving instance Eq (ModelValue M a)
+deriving stock instance Eq (Action (Lockstep M) a)
+deriving stock instance Eq (Observable M a)
+deriving stock instance Eq (ModelValue M a)
 
 {-------------------------------------------------------------------------------
   Interpreters against the real system and against the model
 -------------------------------------------------------------------------------}
 
 data Buggy = Buggy | NotBuggy
-  deriving (Show, Eq)
+  deriving stock (Show, Eq)
 
 instance Arbitrary Buggy where
   arbitrary = elements [Buggy, NotBuggy]
