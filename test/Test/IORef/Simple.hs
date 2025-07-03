@@ -1,23 +1,24 @@
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TypeFamilies    #-}
 
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 module Test.IORef.Simple (tests) where
 
-import Data.Bifunctor
-import Data.Constraint (Dict(..))
-import Data.IORef
-import Data.Map (Map)
-import Data.Map qualified as Map
-import Data.Proxy
-import Test.QuickCheck
-import Test.Tasty
-import Test.Tasty.QuickCheck (testProperty)
+import           Data.Bifunctor
+import           Data.Constraint (Dict (..))
+import           Data.IORef
+import           Data.Map (Map)
+import qualified Data.Map as Map
+import           Data.Proxy
+import           Test.QuickCheck
+import           Test.Tasty
+import           Test.Tasty.QuickCheck (testProperty)
 
-import Test.QuickCheck.StateModel
-import Test.QuickCheck.StateModel.Lockstep
-import Test.QuickCheck.StateModel.Lockstep.Defaults qualified as Lockstep
-import Test.QuickCheck.StateModel.Lockstep.Run qualified as Lockstep
+import           Test.QuickCheck.StateModel
+import           Test.QuickCheck.StateModel.Lockstep
+import qualified Test.QuickCheck.StateModel.Lockstep.Defaults as Lockstep
+import qualified Test.QuickCheck.StateModel.Lockstep.Run as Lockstep
 
 {-------------------------------------------------------------------------------
   Model "M"
@@ -25,11 +26,11 @@ import Test.QuickCheck.StateModel.Lockstep.Run qualified as Lockstep
 
 type MRef = Int
 
-data M = M {
+newtype M = M {
       -- | Value of every var
       mValues :: Map MRef Int
     }
-  deriving (Show)
+  deriving stock (Show)
 
 initModel :: M
 initModel = M { mValues = Map.empty }
@@ -133,13 +134,13 @@ instance RunLockstep M RealMonad where
     Write{} -> Just Dict
     Read{}  -> Just Dict
 
-deriving instance Show (Action (Lockstep M) a)
-deriving instance Show (Observable M a)
-deriving instance Show (ModelValue M a)
+deriving stock instance Show (Action (Lockstep M) a)
+deriving stock instance Show (Observable M a)
+deriving stock instance Show (ModelValue M a)
 
-deriving instance Eq (Action (Lockstep M) a)
-deriving instance Eq (Observable M a)
-deriving instance Eq (ModelValue M a)
+deriving stock instance Eq (Action (Lockstep M) a)
+deriving stock instance Eq (Observable M a)
+deriving stock instance Eq (ModelValue M a)
 
 {-------------------------------------------------------------------------------
   Interpreters against the real system and against the model
@@ -147,7 +148,7 @@ deriving instance Eq (ModelValue M a)
 
 type RealMonad = IO
 
-runIO :: Action (Lockstep M) a -> LookUp RealMonad -> RealMonad a
+runIO :: Action (Lockstep M) a -> LookUp -> RealMonad a
 runIO action lookUp =
     case action of
       New       -> newIORef 0
@@ -155,7 +156,7 @@ runIO action lookUp =
       Read  v   -> readIORef (lookUpRef v)
   where
     lookUpRef :: ModelVar M (IORef Int) -> IORef Int
-    lookUpRef = realLookupVar (Proxy @RealMonad) lookUp
+    lookUpRef = realLookupVar lookUp
 
 runModel ::
      Action (Lockstep M) a

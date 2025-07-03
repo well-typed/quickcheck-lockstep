@@ -39,8 +39,8 @@ module Test.QuickCheck.StateModel.Lockstep (
   , InterpretOp(..)
   ) where
 
-import Prelude hiding (init)
+import           Prelude hiding (init)
 
-import Test.QuickCheck.StateModel.Lockstep.API
-import Test.QuickCheck.StateModel.Lockstep.Op
-import Test.QuickCheck.StateModel.Lockstep.GVar
+import           Test.QuickCheck.StateModel.Lockstep.API
+import           Test.QuickCheck.StateModel.Lockstep.GVar
+import           Test.QuickCheck.StateModel.Lockstep.Op

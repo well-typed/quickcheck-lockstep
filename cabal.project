@@ -1,7 +1,12 @@
+index-state:
+  -- Bump this if you need newer packages from Hackage
+  -- current date: release quickcheck-lockstep-0.8.0
+  , hackage.haskell.org 2025-07-03T00:00:00Z
+
 packages: .
 
-package quickcheck-lockstep
-  tests: True
+tests: True
+benchmarks: True
 
 -- TODO: remove once hashable supports containers-0.8
 allow-newer:

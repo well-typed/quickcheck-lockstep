@@ -18,21 +18,22 @@ module Test.QuickCheck.StateModel.Lockstep.Defaults (
   , monitoring
   ) where
 
-import Prelude hiding (init)
+import           Prelude hiding (init)
 
-import Data.Constraint (Dict(..))
-import Data.Set qualified as Set
-import Data.Typeable
+import           Data.Constraint (Dict (..))
+import qualified Data.Set as Set
+import           Data.Typeable
 
-import Test.QuickCheck (Gen, Property)
-import Test.QuickCheck qualified as QC
-import Test.QuickCheck.StateModel ( Var, Any(..), LookUp, Realized, PostconditionM
-                                  , Action, monitorPost, StateModel (Error))
-import Test.QuickCheck.StateModel.Variables (VarContext, HasVariables (..))
+import qualified Test.QuickCheck as QC
+import           Test.QuickCheck (Gen, Property)
+import           Test.QuickCheck.StateModel (Action, Any (..), LookUp,
+                     PostconditionM, RunModel (Error), Var, monitorPost)
+import           Test.QuickCheck.StateModel.Variables (HasVariables (..),
+                     VarContext)
 
-import Test.QuickCheck.StateModel.Lockstep.API
-import Test.QuickCheck.StateModel.Lockstep.EnvF qualified as EnvF
-import Test.QuickCheck.StateModel.Lockstep.GVar
+import           Test.QuickCheck.StateModel.Lockstep.API
+import qualified Test.QuickCheck.StateModel.Lockstep.EnvF as EnvF
+import           Test.QuickCheck.StateModel.Lockstep.GVar
 
 {-------------------------------------------------------------------------------
   Default implementations for members of 'StateModel'
@@ -97,8 +98,8 @@ postcondition :: forall m state a.
      RunLockstep state m
   => (Lockstep state, Lockstep state)
   -> LockstepAction state a
-  -> LookUp m
-  -> Realized m a
+  -> LookUp
+  -> a
   -> PostconditionM m Bool
 postcondition = postconditionWith True
 
@@ -112,8 +113,8 @@ postconditionWith :: forall m state a.
   => Bool -- ^ Verbose output
   -> (Lockstep state, Lockstep state)
   -> LockstepAction state a
-  -> LookUp m
-  -> Realized m a
+  -> LookUp
+  -> a
   -> PostconditionM m Bool
 postconditionWith verbose (before, _after) action _lookUp a =
     case checkResponse (Proxy @m) before action a of
@@ -127,8 +128,8 @@ monitoring :: forall m state a.
   => Proxy m
   -> (Lockstep state, Lockstep state)
   -> LockstepAction state a
-  -> LookUp m
-  -> Either (Error (Lockstep state)) (Realized m a)
+  -> LookUp
+  -> Either (Error (Lockstep state) m) a
   -> Property -> Property
 monitoring _p (before, after) action _lookUp _realResp =
       QC.counterexample ("State: " ++ show after)
@@ -173,7 +174,7 @@ instance InLockstep state => HasVariables (Action (Lockstep state) a) where
 checkResponse :: forall m state a.
      RunLockstep state m
   => Proxy m
-  -> Lockstep state -> LockstepAction state a -> Realized m a -> Either String String
+  -> Lockstep state -> LockstepAction state a -> a -> Either String String
 checkResponse p (Lockstep state env) action a =
     compareEquality
       (a         , observeReal p action a)
@@ -183,7 +184,7 @@ checkResponse p (Lockstep state env) action a =
     modelResp = fst $ modelNextState action env state
 
     compareEquality ::
-         (Realized m a, Observable state a)
+         (a, Observable state a)
       -> (ModelValue state a, Observable state a) -> Either String String
     compareEquality (realResp, obsRealResp) (mockResp, obsMockResp)
       | obsRealResp == obsMockResp = Right $ concat [

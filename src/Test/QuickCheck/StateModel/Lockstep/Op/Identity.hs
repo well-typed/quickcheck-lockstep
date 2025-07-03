@@ -1,6 +1,6 @@
 module Test.QuickCheck.StateModel.Lockstep.Op.Identity (Op(..)) where
 
-import Test.QuickCheck.StateModel.Lockstep.Op
+import           Test.QuickCheck.StateModel.Lockstep.Op
 
 -- | Very simple operation type that supports identity only
 --
@@ -10,8 +10,8 @@ import Test.QuickCheck.StateModel.Lockstep.Op
 data Op a b where
   OpId :: Op a a
 
-deriving instance Show (Op a b)
-deriving instance Eq   (Op a b)
+deriving stock instance Show (Op a b)
+deriving stock instance Eq   (Op a b)
 
 instance Operation   Op   where opIdentity = OpId
 instance InterpretOp Op f where intOp OpId = Just

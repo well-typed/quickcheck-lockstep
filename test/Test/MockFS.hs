@@ -23,38 +23,39 @@ module Test.MockFS (
   , setPostconditionVerbose
   ) where
 
-import Prelude hiding (init)
+import           Prelude hiding (init)
 
-import Control.Exception (catch, throwIO)
-import Control.Monad (replicateM, (<=<))
-import Control.Monad.Reader (ReaderT (..))
-import Control.Monad.Trans (lift)
-import Data.Bifunctor
-import Data.Constraint
-import Data.IORef
-import Data.Set (Set)
-import Data.Set qualified as Set
-import Data.Typeable
-import System.Directory (removeDirectoryRecursive)
-import System.Directory qualified as IO
-import System.IO qualified as IO
-import System.IO.Temp (createTempDirectory, getCanonicalTemporaryDirectory)
-import System.IO.Unsafe (unsafePerformIO)
-import Test.Tasty (TestTree, testGroup)
-import Test.Tasty.HUnit
-import Test.Tasty.QuickCheck (testProperty)
+import           Control.Exception (catch, throwIO)
+import           Control.Monad (replicateM, (<=<))
+import           Control.Monad.Reader (ReaderT (..))
+import           Control.Monad.Trans (lift)
+import           Data.Bifunctor
+import           Data.Constraint
+import           Data.IORef
+import           Data.Set (Set)
+import qualified Data.Set as Set
+import           Data.Typeable
+import qualified System.Directory as IO
+import           System.Directory (removeDirectoryRecursive)
+import qualified System.IO as IO
+import           System.IO.Temp (createTempDirectory,
+                     getCanonicalTemporaryDirectory)
+import           System.IO.Unsafe (unsafePerformIO)
+import           Test.Tasty (TestTree, testGroup)
+import           Test.Tasty.HUnit
+import           Test.Tasty.QuickCheck (testProperty)
 
-import Test.QuickCheck (Gen)
-import Test.QuickCheck qualified as QC
-import Test.QuickCheck.StateModel hiding (vars)
+import qualified Test.QuickCheck as QC
+import           Test.QuickCheck (Gen)
+import           Test.QuickCheck.StateModel hiding (vars)
 
-import Test.QuickCheck.StateModel.Lockstep
-import Test.QuickCheck.StateModel.Lockstep.Defaults qualified as Lockstep
-import Test.QuickCheck.StateModel.Lockstep.Op.SumProd
-import Test.QuickCheck.StateModel.Lockstep.Run qualified as Lockstep
+import           Test.QuickCheck.StateModel.Lockstep
+import qualified Test.QuickCheck.StateModel.Lockstep.Defaults as Lockstep
+import           Test.QuickCheck.StateModel.Lockstep.Op.SumProd
+import qualified Test.QuickCheck.StateModel.Lockstep.Run as Lockstep
 
-import Test.MockFS.Mock (Mock, Dir(..), File(..), Err)
-import Test.MockFS.Mock qualified as Mock
+import qualified Test.MockFS.Mock as Mock
+import           Test.MockFS.Mock (Dir (..), Err, File (..), Mock)
 
 {-------------------------------------------------------------------------------
   Model state
@@ -64,7 +65,7 @@ data FsState = FsState {
       fsStateMock  :: Mock
     , fsStateStats :: Stats
     }
-  deriving (Show)
+  deriving stock (Show)
 
 initState :: FsState
 initState = FsState {
@@ -102,8 +103,8 @@ instance RunModel (Lockstep FsState) RealMonad where
       runPostcondition pc states action lookUp result
   monitoring    = Lockstep.monitoring (Proxy @RealMonad)
 
-deriving instance Show (Action (Lockstep FsState) a)
-deriving instance Eq   (Action (Lockstep FsState) a)
+deriving stock instance Show (Action (Lockstep FsState) a)
+deriving stock instance Eq   (Action (Lockstep FsState) a)
 
 {-------------------------------------------------------------------------------
   InLockstep instance
@@ -199,10 +200,10 @@ instance InLockstep FsState where
 
   tagStep (_, FsState _ after) act = map show . tagFsAction after act
 
-deriving instance Show (Observable FsState a)
-deriving instance Eq   (Observable FsState a)
+deriving stock instance Show (Observable FsState a)
+deriving stock instance Eq   (Observable FsState a)
 
-deriving instance Show (FsVal a)
+deriving stock instance Show (FsVal a)
 
 {-------------------------------------------------------------------------------
   RunLockstep instance
@@ -211,7 +212,7 @@ deriving instance Show (FsVal a)
 instance RunLockstep FsState RealMonad where
   observeReal ::
        Proxy RealMonad
-    -> LockstepAction FsState a -> Realized RealMonad a -> FsObs a
+    -> LockstepAction FsState a -> a -> FsObs a
   observeReal _ = \case
       MkDir{} -> OEither . bimap OId OId
       Open{}  -> OEither . bimap OId (OPair . bimap (const OHandle) OId)
@@ -330,7 +331,7 @@ instance InterpretOp Op (ModelValue FsState) where
   Interpreter for IO
 -------------------------------------------------------------------------------}
 
-runIO :: LockstepAction FsState a -> LookUp RealMonad -> RealMonad (Realized RealMonad a)
+runIO :: LockstepAction FsState a -> LookUp -> RealMonad a
 runIO action lookUp = ReaderT $ \root -> aux root action
   where
     aux :: FilePath -> LockstepAction FsState a -> IO a
@@ -351,7 +352,7 @@ runIO action lookUp = ReaderT $ \root -> aux root action
             _                     -> pure s
       where
         lookUp' :: FsVar x -> x
-        lookUp' = realLookupVar (Proxy @RealMonad) lookUp
+        lookUp' = realLookupVar lookUp
 
 catchErr :: forall a. IO a -> IO (Either Err a)
 catchErr act = catch (Right <$> act) handler
@@ -376,7 +377,7 @@ updateStats action result  =
      _otherwise                  -> id
 
 data Tag = OpenTwo | SuccessfulRead
-  deriving (Show)
+  deriving stock (Show)
 
 tagFsAction :: Stats -> LockstepAction FsState a -> FsVal a -> [Tag]
 tagFsAction openedFiles = \case
@@ -412,7 +413,7 @@ createSystemTempDirectory prefix = do
 -------------------------------------------------------------------------------}
 
 data Fault = Fault | NoFault
-  deriving Eq
+  deriving stock Eq
 
 {-# NOINLINE faultRef #-}
 -- | A mutable variable that can be set globally to induce test failures in
@@ -450,12 +451,12 @@ runPostcondition ::
      Postcondition
   -> (Lockstep FsState, Lockstep FsState)
   -> Action (Lockstep FsState) a
-  -> LookUp RealMonad
-  -> Realized RealMonad a
+  -> LookUp
+  -> a
   -> PostconditionM RealMonad Bool
-runPostcondition DefaultPostcondition = Lockstep.postcondition
+runPostcondition DefaultPostcondition    = Lockstep.postcondition
 runPostcondition NonVerbosePostcondition = Lockstep.postconditionWith False
-runPostcondition VerbosePostcondition = Lockstep.postconditionWith True
+runPostcondition VerbosePostcondition    = Lockstep.postconditionWith True
 
 {-# NOINLINE postconditionRef #-}
 postconditionRef :: IORef Postcondition

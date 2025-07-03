@@ -1,5 +1,6 @@
-{-# LANGUAGE PatternSynonyms #-}
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE PatternSynonyms       #-}
+{-# LANGUAGE QuantifiedConstraints #-}
+{-# LANGUAGE UndecidableInstances  #-}
 
 -- | Generalized variables
 --
@@ -21,18 +22,20 @@ module Test.QuickCheck.StateModel.Lockstep.GVar (
   , pattern GVar
   ) where
 
-import Prelude hiding (map)
+import           Prelude hiding (map)
 
-import Data.Maybe (isJust)
-import Data.Typeable
+import           Control.Monad.Identity (Identity (..))
 
-import GHC.Show
+import           Data.Maybe (isJust)
+import           Data.Typeable
 
-import Test.QuickCheck.StateModel (Var, LookUp, Realized, HasVariables (..))
+import           GHC.Show
 
-import Test.QuickCheck.StateModel.Lockstep.EnvF (EnvF)
-import Test.QuickCheck.StateModel.Lockstep.EnvF qualified as EnvF
-import Test.QuickCheck.StateModel.Lockstep.Op
+import           Test.QuickCheck.StateModel (HasVariables (..), LookUp, Var)
+
+import qualified Test.QuickCheck.StateModel.Lockstep.EnvF as EnvF
+import           Test.QuickCheck.StateModel.Lockstep.EnvF (EnvF)
+import           Test.QuickCheck.StateModel.Lockstep.Op
 
 {-------------------------------------------------------------------------------
   Main type
@@ -91,18 +94,18 @@ mapGVar f (GVar var op) = GVar var (f op)
   Interop with 'Env'
 -------------------------------------------------------------------------------}
 
-lookUpWrapped :: Typeable a => Proxy m -> LookUp m -> Var a -> WrapRealized m a
-lookUpWrapped _ m v = WrapRealized (m v)
+lookUpWrapped :: Typeable a => LookUp -> Var a -> Identity a
+lookUpWrapped m v = Identity (m v)
 
 -- | Lookup 'GVar' given a lookup function for 'Var'
 --
 -- The result is 'Just' if the variable is in the environment and evaluation
 -- succeeds. This is normally guaranteed by the default test 'precondition'.
 lookUpGVar ::
-     InterpretOp op (WrapRealized m)
-  => Proxy m -> LookUp m -> GVar op a -> Maybe (Realized m a)
-lookUpGVar p lookUp (GVar var op) =
-    unwrapRealized <$> intOp op (lookUpWrapped p lookUp var)
+     InterpretOp op Identity
+  => LookUp -> GVar op a -> Maybe a
+lookUpGVar lookUp (GVar var op) =
+    runIdentity <$> intOp op (lookUpWrapped lookUp var)
 
 {-------------------------------------------------------------------------------
   Interop with EnvF

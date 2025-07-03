@@ -2,18 +2,14 @@
 
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module Test.Test.QuickCheck.StateModel.Lockstep.GVar where
+module Test.Test.QuickCheck.StateModel.Lockstep.GVar (tests) where
 
-import           Data.Data                                      (eqT,
-                                                                 (:~:) (Refl))
+import           Data.Data (eqT, (:~:) (Refl))
 import           Data.Functor.Identity
-import           Test.QuickCheck.StateModel.Lockstep.EnvF       hiding
-                                                                (shrinkVar)
+import           Test.QuickCheck.StateModel.Lockstep.EnvF hiding (shrinkVar)
 import           Test.QuickCheck.StateModel.Lockstep.GVar
-import           Test.QuickCheck.StateModel.Lockstep.Op
 import           Test.QuickCheck.StateModel.Lockstep.Op.SumProd
-import           Test.QuickCheck.StateModel.Variables           hiding
-                                                                (shrinkVar)
+import           Test.QuickCheck.StateModel.Variables hiding (shrinkVar)
 import           Test.Tasty
 import           Test.Tasty.QuickCheck
 
@@ -49,9 +45,6 @@ prop_shrinkGVar_wellDefinedAndEvaluable env gvar =
 {-------------------------------------------------------------------------------
   Well-defined and evaluable shrinks: generators, shrinkers, printers
 -------------------------------------------------------------------------------}
-
-instance InterpretOp Op Identity where
-  intOp op = traverse (intOpId op)
 
 -- NOTE: both the environment and variables contain/are existential types, which
 -- can get a little bit complicated when writing generators, shrinkers and

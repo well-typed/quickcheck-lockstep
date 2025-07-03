@@ -1,4 +1,5 @@
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE QuantifiedConstraints #-}
+{-# LANGUAGE TypeOperators         #-}
 
 -- | Run lockstep tests
 --
@@ -14,22 +15,22 @@ module Test.QuickCheck.StateModel.Lockstep.Run (
   , runActionsBracket
   ) where
 
-import Prelude hiding (init)
+import           Prelude hiding (init)
 
-import Control.Exception
-import Control.Monad (void)
-import Data.Set (Set)
-import Data.Set qualified as Set
-import Data.Typeable
-import Test.QuickCheck.Monadic
+import           Control.Exception
+import           Control.Monad (void)
+import           Data.Set (Set)
+import qualified Data.Set as Set
+import           Data.Typeable
+import           Test.QuickCheck.Monadic
 
-import Test.QuickCheck (Property, Testable)
-import Test.QuickCheck qualified as QC
-import Test.QuickCheck.StateModel hiding (runActions)
-import Test.QuickCheck.StateModel qualified as StateModel
+import qualified Test.QuickCheck as QC
+import           Test.QuickCheck (Property, Testable)
+import qualified Test.QuickCheck.StateModel as StateModel
+import           Test.QuickCheck.StateModel hiding (runActions)
 
-import Test.QuickCheck.StateModel.Lockstep.API
-import Test.QuickCheck.StateModel.Lockstep.EnvF qualified as EnvF
+import           Test.QuickCheck.StateModel.Lockstep.API
+import qualified Test.QuickCheck.StateModel.Lockstep.EnvF as EnvF
 
 {-------------------------------------------------------------------------------
   Finding labelled examples
@@ -93,7 +94,7 @@ labelActions (Actions steps) =
 
 runActions ::
      ( RunLockstep state IO
-     , e ~ Error (Lockstep state)
+     , e ~ Error (Lockstep state) IO
      , forall a. IsPerformResult e a
      )
   => Proxy state
@@ -110,7 +111,7 @@ runActions _ actions = monadicIO $ void $ StateModel.runActions  actions
 -- is a reasonable choice.
 runActionsBracket ::
      ( RunLockstep state m
-     , e ~ Error (Lockstep state)
+     , e ~ Error (Lockstep state) m
      , forall a. IsPerformResult e a
      )
   => Proxy state

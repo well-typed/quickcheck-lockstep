@@ -1,11 +1,9 @@
-{- HLINT ignore "Use camelCase" -}
+module Test.Golden (Test.Golden.tests) where
 
-module Test.Golden where
-
-import           Control.Exception      (bracket_)
+import           Control.Exception (bracket_)
 import           System.Directory
 import           System.FilePath
-import           Test.MockFS            as MockFS
+import           Test.MockFS as MockFS
 import           Test.QuickCheck
 import           Test.QuickCheck.Random (mkQCGen)
 import           Test.Tasty

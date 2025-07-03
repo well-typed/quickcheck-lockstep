@@ -1,11 +1,10 @@
 module Test.QuickCheck.StateModel.Lockstep.Op.SumProd (Op(..), intOpId) where
 
-import Control.Monad ((<=<))
-import Control.Monad.Reader (ReaderT)
-import Control.Monad.State (StateT)
-import GHC.Show (appPrec)
+import           Control.Monad ((<=<))
+import           Control.Monad.Identity (Identity)
+import           GHC.Show (appPrec)
 
-import Test.QuickCheck.StateModel.Lockstep.Op
+import           Test.QuickCheck.StateModel.Lockstep.Op
 
 {-------------------------------------------------------------------------------
   Example (but very useful) 'Operation' example
@@ -44,16 +43,8 @@ intOpId (OpComp g f) = intOpId g <=< intOpId f
 instance Operation Op where
   opIdentity = OpId
 
-instance InterpretOp Op (WrapRealized IO) where
-  intOp = intOpRealizedId intOpId
-
-instance InterpretOp Op (WrapRealized m)
-      => InterpretOp Op (WrapRealized (StateT s m)) where
-  intOp = intOpTransformer
-
-instance InterpretOp Op (WrapRealized m)
-      => InterpretOp Op (WrapRealized (ReaderT r m)) where
-  intOp = intOpTransformer
+instance InterpretOp Op Identity where
+  intOp = intOpIdentity intOpId
 
 {-------------------------------------------------------------------------------
   'Show' and 'Eq' instances

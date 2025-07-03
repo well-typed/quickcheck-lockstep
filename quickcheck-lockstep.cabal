@@ -34,29 +34,91 @@ source-repository head
   type:     git
   location: https://github.com/well-typed/quickcheck-lockstep
 
-common lang
+common language
+  -- This is at the top-level so that `cabal check` does not complain.
   default-language:   Haskell2010
-  default-extensions:
-    FlexibleContexts
-    FlexibleInstances
-    GADTs
-    ImportQualifiedPost
-    LambdaCase
-    MultiParamTypeClasses
-    QuantifiedConstraints
-    RankNTypes
-    ScopedTypeVariables
-    StandaloneDeriving
-    TupleSections
-    TypeApplications
-    TypeFamilies
 
-  other-extensions:   UndecidableInstances
+  -- For newer GHC's, override Haskell2010 with GHC2021
+  if impl(ghc >=9.2.1)
+    default-language: GHC2021
+
+  -- For older GHC's, manually enable all language extensions that are in
+  -- GHC2021
+  --
+  -- NOTE: FieldSelectors is not supported on ghc-8.10.7, so it is the only
+  -- language extension that is missing compared to GHC2021
+  else
+    default-extensions:
+      BangPatterns
+      BinaryLiterals
+      ConstrainedClassMethods
+      ConstraintKinds
+      DeriveDataTypeable
+      DeriveFoldable
+      DeriveFunctor
+      DeriveGeneric
+      DeriveLift
+      DeriveTraversable
+      DoAndIfThenElse
+      EmptyCase
+      EmptyDataDecls
+      EmptyDataDeriving
+      ExistentialQuantification
+      ExplicitForAll
+      FlexibleContexts
+      FlexibleInstances
+      ForeignFunctionInterface
+      GADTSyntax
+      GeneralisedNewtypeDeriving
+      HexFloatLiterals
+      ImplicitPrelude
+      ImportQualifiedPost
+      InstanceSigs
+      KindSignatures
+      MonomorphismRestriction
+      MultiParamTypeClasses
+      NamedFieldPuns
+      NamedWildCards
+      NoExplicitNamespaces
+      NumericUnderscores
+      PatternGuards
+      PolyKinds
+      PostfixOperators
+      RankNTypes
+      RelaxedPolyRec
+      ScopedTypeVariables
+      StandaloneDeriving
+      StandaloneKindSignatures
+      StarIsType
+      TraditionalRecordSyntax
+      TupleSections
+      TypeApplications
+      TypeOperators
+      TypeSynonymInstances
+
+  -- Extensions that we enable by default
+  default-extensions:
+    DeriveAnyClass
+    DerivingStrategies
+    DerivingVia
+    ExplicitNamespaces
+    GADTs
+    LambdaCase
+    RecordWildCards
+    RoleAnnotations
+    ViewPatterns
+
+common warnings
   ghc-options:
-    -Wall -Wprepositive-qualified-module -Wredundant-constraints
+    -Wall -Wcompat -Wincomplete-uni-patterns
+    -Wincomplete-record-updates -Wpartial-fields -Widentities
+    -Wredundant-constraints -Wmissing-export-lists
+    -Wno-unticked-promoted-constructors -Wunused-packages
+
+  ghc-options: -Werror=missing-deriving-strategies
 
 library
-  import:          lang
+  import:          language, warnings
   exposed-modules:
     Test.QuickCheck.StateModel.Lockstep
     Test.QuickCheck.StateModel.Lockstep.Defaults
@@ -72,17 +134,17 @@ library
 
   -- quickcheck-dynamic requires ghc 8.10 minimum
   build-depends:
-    , base                >=4.14   && <4.22
-    , constraints         ^>=0.13  || ^>=0.14
-    , containers          ^>=0.6   || ^>=0.7  || ^>=0.8
-    , mtl                 ^>=2.2   || ^>=2.3
-    , QuickCheck          ^>=2.14  || ^>=2.15
-    , quickcheck-dynamic  ^>=3.4.1
+    , base                >=4.14  && <4.22
+    , constraints         ^>=0.13 || ^>=0.14
+    , containers          ^>=0.6  || ^>=0.7  || ^>=0.8
+    , mtl                 ^>=2.2  || ^>=2.3
+    , QuickCheck          ^>=2.14 || ^>=2.15
+    , quickcheck-dynamic  ^>=4.0
 
   hs-source-dirs:  src
 
 test-suite test-quickcheck-lockstep
-  import:             lang
+  import:             language, warnings
   type:               exitcode-stdio-1.0
   hs-source-dirs:     test
   main-is:            Main.hs
@@ -99,7 +161,7 @@ test-suite test-quickcheck-lockstep
 
   -- Version bounds determined by main lib
   build-depends:
-    , base < 5
+    , base                 <5
     , constraints
     , containers
     , directory
@@ -115,7 +177,7 @@ test-suite test-quickcheck-lockstep
     , temporary
 
 test-suite test-internals
-  import:         lang
+  import:         language, warnings
   type:           exitcode-stdio-1.0
   hs-source-dirs: test-internals src
   main-is:        Main.hs
@@ -126,14 +188,10 @@ test-suite test-internals
     Test.QuickCheck.StateModel.Lockstep.Op.SumProd
     Test.Test.QuickCheck.StateModel.Lockstep.GVar
 
-  ghc-options:
-    -Wno-prepositive-qualified-module
-
   -- Version bounds determined by main lib
   build-depends:
-    , base < 5
+    , base                <5
+    , mtl
     , quickcheck-dynamic
     , tasty
-    , mtl
     , tasty-quickcheck
-    , QuickCheck

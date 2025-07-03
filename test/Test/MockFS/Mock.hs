@@ -18,28 +18,28 @@ module Test.MockFS.Mock (
   , mRead
   ) where
 
-import Data.List qualified as List
-import Data.Map (Map)
-import Data.Map qualified as Map
-import Data.Set (Set)
-import Data.Set qualified as Set
-import GHC.Generics (Generic)
-import GHC.IO.Exception qualified as GHC
-import System.FilePath ((</>))
-import System.IO.Error
+import qualified Data.List as List
+import           Data.Map (Map)
+import qualified Data.Map as Map
+import           Data.Set (Set)
+import qualified Data.Set as Set
+import           GHC.Generics (Generic)
+import qualified GHC.IO.Exception as GHC
+import           System.FilePath ((</>))
+import           System.IO.Error
 
 {-------------------------------------------------------------------------------
   Paths
 -------------------------------------------------------------------------------}
 
-data Dir = Dir [String]
-  deriving (Show, Eq, Ord, Generic)
+newtype Dir = Dir [String]
+  deriving stock (Show, Eq, Ord, Generic)
 
 parent :: Dir -> Dir
 parent (Dir fp) = Dir (init fp)
 
 data File = File {dir :: Dir, name :: String}
-  deriving (Show, Eq, Ord, Generic)
+  deriving stock (Show, Eq, Ord, Generic)
 
 dirFP :: FilePath -> Dir -> FilePath
 dirFP root (Dir d) = List.foldl' (</>) root d
@@ -56,7 +56,7 @@ data Err =
   | DoesNotExist
   | HandleClosed
   | Busy
-  deriving (Show, Eq)
+  deriving stock (Show, Eq)
 
 
 fromIOError :: IOError -> Maybe Err
@@ -80,7 +80,7 @@ data Mock = M {
   , open  :: Map MHandle File
   , next  :: MHandle
   }
-  deriving (Show, Generic)
+  deriving stock (Show, Generic)
 
 emptyMock :: Mock
 emptyMock = M (Set.singleton (Dir [])) Map.empty Map.empty 0
