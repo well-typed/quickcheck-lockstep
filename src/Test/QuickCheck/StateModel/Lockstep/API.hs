@@ -26,13 +26,15 @@ module Test.QuickCheck.StateModel.Lockstep.API (
   , realLookupVar
   ) where
 
+import           Control.Monad.Identity (Identity)
+
 import           Data.Constraint (Dict (..))
 import           Data.Kind
 import           Data.Typeable
 
 import           Test.QuickCheck (Gen)
-import           Test.QuickCheck.StateModel (Action, Any, LookUp, Realized,
-                     RunModel, StateModel)
+import           Test.QuickCheck.StateModel (Action, Any, LookUp, RunModel,
+                     StateModel)
 
 import qualified Test.QuickCheck.StateModel.Lockstep.EnvF as EnvF
 import           Test.QuickCheck.StateModel.Lockstep.EnvF (EnvF)
@@ -47,20 +49,6 @@ import qualified Test.QuickCheck.StateModel.Lockstep.Op.Identity as Identity
 
   @quickcheck-dynamic@ takes care of keeping track of the responses of the
   system under test, but not the model. We do that here.
-
-  Implementation note: the 'RunModel' class in @quickcheck-dynamic@ uses a type
-  family 'Realized': for an @Action state a@, the response from the real system
-  is expected to be of type @Realized m a@. This allows the same tests to be run
-  against different "test execution backends"; for example, we could run the
-  tests in the real IO monad, or using an IO monad simulator.
-
-  This is an orthogonal generalization to what Lockstep provides: no matter the
-  test execution backend, the /model/ will always be the same. We could perhaps
-  piggy-back on the same abstraction if we introduced a separate monad parameter
-  @n@ for the model, and then use @Realized n a@ instead of @ModelValue a@. This
-  might work, but it's less clear how to then also that for 'Observable'.
-  Overall, it seems cleaner to reserve 'Realized' exclusively for the
-  parameterization over test execution backends.
 -------------------------------------------------------------------------------}
 
 data Lockstep state = Lockstep {
@@ -167,7 +155,7 @@ class ( InLockstep state
   -- See also 'Observable'
   observeReal ::
        Proxy m
-    -> LockstepAction state a -> Realized m a -> Observable state a
+    -> LockstepAction state a -> a -> Observable state a
 
   -- | Show responses from the real system
   --
@@ -176,7 +164,7 @@ class ( InLockstep state
   showRealResponse ::
        Proxy m
     -> LockstepAction state a
-    -> Maybe (Dict (Show (Realized m a)))
+    -> Maybe (Dict (Show a))
   showRealResponse _ _ = Nothing
 
 {-------------------------------------------------------------------------------
@@ -198,7 +186,7 @@ type ModelFindVariables state = forall a.
 type ModelShrinkVar state = forall a. ModelVar state a -> [ModelVar state a]
 
 -- | See 'realLookupVar'.
-type RealLookUp m op = forall a. Proxy m -> LookUp m -> GVar op a -> Realized m a
+type RealLookUp op = forall a. LookUp -> GVar op a -> a
 
 -- | Variables with a "functor-esque" instance
 type ModelVar state = GVar (ModelOp state)
@@ -245,8 +233,8 @@ shrinkVar env var = EnvF.shrinkGVar env var
 -- | Look up a variable for execution of the real system.
 --
 -- The type of the variable is the type in the /real/ system.
-realLookupVar :: InterpretOp op (WrapRealized m) => RealLookUp m op
-realLookupVar p lookUp gvar = case EnvF.lookUpGVar p lookUp gvar of
+realLookupVar :: InterpretOp op Identity => RealLookUp op
+realLookupVar lookUp gvar = case EnvF.lookUpGVar lookUp gvar of
     Just x -> x
     Nothing -> error
       "realLookupVar: the variable (GVar) must be well-defined and evaluable, \

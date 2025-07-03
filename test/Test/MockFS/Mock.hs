@@ -32,7 +32,7 @@ import           System.IO.Error
   Paths
 -------------------------------------------------------------------------------}
 
-data Dir = Dir [String]
+newtype Dir = Dir [String]
   deriving stock (Show, Eq, Ord, Generic)
 
 parent :: Dir -> Dir

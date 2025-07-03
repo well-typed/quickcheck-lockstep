@@ -201,7 +201,7 @@ type BrokenRef = [(IORef Int, Int)]
 
 type RealMonad = ReaderT (Buggy, IORef BrokenRef) IO
 
-runIO :: Action (Lockstep M) a -> LookUp RealMonad -> RealMonad a
+runIO :: Action (Lockstep M) a -> LookUp -> RealMonad a
 runIO action lookUp = ReaderT $ \(buggy, brokenRef) ->
     case action of
       New       -> newIORef 0
@@ -209,11 +209,11 @@ runIO action lookUp = ReaderT $ \(buggy, brokenRef) ->
       Read  v   -> readIORef (lookUpRef v)
   where
     lookUpRef :: ModelVar M (IORef Int) -> IORef Int
-    lookUpRef = realLookupVar (Proxy @RealMonad) lookUp
+    lookUpRef = realLookupVar lookUp
 
     lookUpInt :: Either Int (ModelVar M Int) -> Int
     lookUpInt (Left  x) = x
-    lookUpInt (Right v) = realLookupVar (Proxy @RealMonad) lookUp v
+    lookUpInt (Right v) = realLookupVar lookUp v
 
 -- | The second write to the same variable will be broken
 brokenWrite :: Buggy -> IORef BrokenRef -> IORef Int -> Int -> IO Int

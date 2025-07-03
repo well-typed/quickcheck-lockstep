@@ -212,7 +212,7 @@ deriving stock instance Show (FsVal a)
 instance RunLockstep FsState RealMonad where
   observeReal ::
        Proxy RealMonad
-    -> LockstepAction FsState a -> Realized RealMonad a -> FsObs a
+    -> LockstepAction FsState a -> a -> FsObs a
   observeReal _ = \case
       MkDir{} -> OEither . bimap OId OId
       Open{}  -> OEither . bimap OId (OPair . bimap (const OHandle) OId)
@@ -331,7 +331,7 @@ instance InterpretOp Op (ModelValue FsState) where
   Interpreter for IO
 -------------------------------------------------------------------------------}
 
-runIO :: LockstepAction FsState a -> LookUp RealMonad -> RealMonad (Realized RealMonad a)
+runIO :: LockstepAction FsState a -> LookUp -> RealMonad a
 runIO action lookUp = ReaderT $ \root -> aux root action
   where
     aux :: FilePath -> LockstepAction FsState a -> IO a
@@ -352,7 +352,7 @@ runIO action lookUp = ReaderT $ \root -> aux root action
             _                     -> pure s
       where
         lookUp' :: FsVar x -> x
-        lookUp' = realLookupVar (Proxy @RealMonad) lookUp
+        lookUp' = realLookupVar lookUp
 
 catchErr :: forall a. IO a -> IO (Either Err a)
 catchErr act = catch (Right <$> act) handler
@@ -451,8 +451,8 @@ runPostcondition ::
      Postcondition
   -> (Lockstep FsState, Lockstep FsState)
   -> Action (Lockstep FsState) a
-  -> LookUp RealMonad
-  -> Realized RealMonad a
+  -> LookUp
+  -> a
   -> PostconditionM RealMonad Bool
 runPostcondition DefaultPostcondition    = Lockstep.postcondition
 runPostcondition NonVerbosePostcondition = Lockstep.postconditionWith False

@@ -26,7 +26,7 @@ import qualified Test.QuickCheck.StateModel.Lockstep.Run as Lockstep
 
 type MRef = Int
 
-data M = M {
+newtype M = M {
       -- | Value of every var
       mValues :: Map MRef Int
     }
@@ -148,7 +148,7 @@ deriving stock instance Eq (ModelValue M a)
 
 type RealMonad = IO
 
-runIO :: Action (Lockstep M) a -> LookUp RealMonad -> RealMonad a
+runIO :: Action (Lockstep M) a -> LookUp -> RealMonad a
 runIO action lookUp =
     case action of
       New       -> newIORef 0
@@ -156,7 +156,7 @@ runIO action lookUp =
       Read  v   -> readIORef (lookUpRef v)
   where
     lookUpRef :: ModelVar M (IORef Int) -> IORef Int
-    lookUpRef = realLookupVar (Proxy @RealMonad) lookUp
+    lookUpRef = realLookupVar lookUp
 
 runModel ::
      Action (Lockstep M) a

@@ -2,9 +2,60 @@
 
 ## 0.8.0 -- 2025-07-03
 
+
+* BREAKING: Support `quickcheck-dynamic-4`. Going from version 3 to 4, some
+  breaking changes were introduced in `quickcheck-dynamic`, which cascades into
+  changes for `quickcheck-lockstep`. The changes to the latter are listed below
+  together with hints as to how to migrate from `quickcheck-lockstep-0.7` to
+  `quickcheck-lockstep-0.8`. For migrating from `quickcheck-dynamic-3` to
+  `quickcheck-dynamic-4`, see [the `quickcheck-dynamic-4`
+  changelog][q-d-4.0:hackage].
+
+  - The `Realized` type family is removed.
+
+    + Types of the form `Realized m a` are replaced by `a` everywhere.
+
+      Users should make this change in their own code as well.
+
+    + Types of the form `LookUp m` are replaced by `LookUp` everywhere.
+
+      Users should make this change in their own code as well.
+
+    + The `RealLookUp` type synonym no longer has an `m` type argument, and the
+      `Proxy m` type is removed from the right-hand side of the definition.
+      Types of the form `RealLookup m op` are replaced by `RealLookup op`
+      everywhere.
+
+      Users should make this change in their own code as well. (Any values of)
+      the type `Proxy m` that were previously passed to functions of the
+      `RealLookup` type can be removed.
+
+    + `WrapRealized m` is replaced by `Identity`. The `WrapRealized m` type and
+      its helper functions (`intOpRealizedId`, `intOpTransformer`) are removed
+      completely. A new helper function called `intOpIdentity` is added. For the
+      `Op` from the `SumProd` module, the instances `InterpretOp Op
+      (WrapRealized IO)`, `InterpretOp Op (WrapRealized (StateT s m))`, and
+      `InterpretOp Op (WrapRealized (ReaderT r m))` are removed and replaced by
+      an `InterpretOp Op Identity` instance.
+
+      Instead of providing an `InterpretOp op (WrapRealized m)` instance, users
+      should now provide an `InterpretOp op Identity` instance if `op` is a
+      custom type that is not included in `quickcheck-lockstep` (like
+      `SumProd.Op`, which comes an instance already defined). Use
+      `intOpIdentity` to help define this instance for custom `op` types.
+
+  - The `Error` type family is moved from `StateModel` to `RunModel`, and now
+    requires an additional `m` type paramer. For `quickcheck-lockstep`, types of
+    the form `Error st` are replaced by `Error st m` everywhere.
+
+    The user should make this change in their own code as well.
+
 * PATCH: enable a bunch of GHC warnings
 * PATCH: use GHC2021, and if not available, enable all GHC2021 language
   extensions explicitly.
+
+[q-d-4:hackage]:https://hackage.haskell.org/package/quickcheck-dynamic-4.0.0/changelog
+[io-sim:hackage]:https://hackage.haskell.org/package/io-sim
 
 ## 0.7.0 -- 2025-05-09
 
