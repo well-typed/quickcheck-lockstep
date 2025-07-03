@@ -2,7 +2,6 @@
 
 ## 0.8.0 -- 2025-07-03
 
-
 * BREAKING: Support `quickcheck-dynamic-4`. Going from version 3 to 4, some
   breaking changes were introduced in `quickcheck-dynamic`, which cascades into
   changes for `quickcheck-lockstep`. The changes to the latter are listed below
