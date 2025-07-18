@@ -11,7 +11,7 @@ import           Data.IORef
 import           Data.Map (Map)
 import qualified Data.Map as Map
 import           Data.Proxy
-import           Test.QuickCheck
+import           Test.QuickCheck (Gen, Property, choose, elements, oneof)
 import           Test.Tasty
 import           Test.Tasty.QuickCheck (testProperty)
 

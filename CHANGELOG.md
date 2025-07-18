@@ -1,5 +1,9 @@
 # Revision history for quickcheck-lockstep
 
+## 0.8.1 -- 2025-07-18
+
+* PATCH: support `QuickCheck-2.16`
+
 ## 0.8.0 -- 2025-07-03
 
 * BREAKING: Support `quickcheck-dynamic-4`. Going from version 3 to 4, some
