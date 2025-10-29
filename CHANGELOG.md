@@ -1,5 +1,9 @@
 # Revision history for quickcheck-lockstep
 
+## 0.8.2 -- 2025-10-29
+
+* PATCH: support `QuickCheck-2.17`
+
 ## 0.8.1 -- 2025-07-18
 
 * PATCH: support `QuickCheck-2.16`
