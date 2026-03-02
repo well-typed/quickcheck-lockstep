@@ -1,6 +1,6 @@
 cabal-version:   3.4
 name:            quickcheck-lockstep
-version:         0.8.2
+version:         0.8.3
 license:         BSD-3-Clause
 license-file:    LICENSE
 author:          Edsko de Vries
@@ -38,7 +38,7 @@ source-repository head
 source-repository this
   type:     git
   location: https://github.com/well-typed/quickcheck-lockstep
-  tag:      quickcheck-lockstep-0.8.2
+  tag:      quickcheck-lockstep-0.8.3
 
 common language
   -- This is at the top-level so that `cabal check` does not complain.

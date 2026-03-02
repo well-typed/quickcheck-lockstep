@@ -1,6 +1,6 @@
 # Revision history for quickcheck-lockstep
 
-## ?.?.? -- ????-??-??
+## 0.8.3 -- 2026-03-02
 
 * PATCH: support `QuickCheck-2.18`
 * PATCH: support `ghc-9.14`
