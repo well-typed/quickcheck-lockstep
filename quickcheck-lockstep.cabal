@@ -29,6 +29,7 @@ tested-with:
    || ==9.8
    || ==9.10
    || ==9.12
+   || ==9.14
 
 source-repository head
   type:     git
@@ -139,7 +140,7 @@ library
 
   -- quickcheck-dynamic requires ghc 8.10 minimum
   build-depends:
-    , base                >=4.14  && <4.22
+    , base                >=4.14  && <4.23
     , constraints         ^>=0.13 || ^>=0.14
     , containers          ^>=0.6  || ^>=0.7  || ^>=0.8
     , mtl                 ^>=2.2  || ^>=2.3

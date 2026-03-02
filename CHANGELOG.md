@@ -3,6 +3,7 @@
 ## ?.?.? -- ????-??-??
 
 * PATCH: support `QuickCheck-2.18`
+* PATCH: support `ghc-9.14`
 
 ## 0.8.2 -- 2025-10-29
 

@@ -8,6 +8,7 @@
 -- > import Test.QuickCheck.StateModel.Lockstep.EnvF qualified as EnvF
 module Test.QuickCheck.StateModel.Lockstep.EnvF (
     EnvF -- opaque
+      (EnvF) -- Internal: exposed for testing only
     -- * Construction
   , empty
   , insert
@@ -16,7 +17,6 @@ module Test.QuickCheck.StateModel.Lockstep.EnvF (
   , keysOfType
   , shrinkVar
     -- * Internal: exposed for testing
-  , pattern EnvF
   , EnvEntry (..)
   ) where
 

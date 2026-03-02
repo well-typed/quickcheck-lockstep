@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP                   #-}
 {-# LANGUAGE PatternSynonyms       #-}
 {-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE UndecidableInstances  #-}
@@ -7,6 +8,7 @@
 -- Intended for unqualified import.
 module Test.QuickCheck.StateModel.Lockstep.GVar (
     GVar -- opaque
+      (GVar) -- Internal: exposed for testing only
   , AnyGVar(..)
     -- * Construction
   , unsafeMkGVar
@@ -18,8 +20,6 @@ module Test.QuickCheck.StateModel.Lockstep.GVar (
   , lookUpEnvF
   , definedInEnvF
   , shrinkGVar
-    -- * Internal: exposed for testing
-  , pattern GVar
   ) where
 
 import           Prelude hiding (map)

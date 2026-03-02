@@ -8,6 +8,7 @@ packages: .
 tests: True
 benchmarks: True
 
--- TODO: remove once hashable supports containers-0.8
-allow-newer:
-  hashable:containers
+-- TODO: remove once boring supports ghc-9.14
+if impl(ghc >= 9.14)
+  allow-newer:
+    boring:base
