@@ -82,3 +82,51 @@ jobs:
         TASTY_TIMEOUT: "5m"
       run: |
         cabal test -j1 --test-show-details=direct all
+
+  ################################################################################
+  # Lint with cabal-fmt
+  ################################################################################
+  lint-cabal-fmt:
+    name: Lint with cabal-fmt
+    runs-on: ubuntu-latest
+    steps:
+    - name: 📥 Checkout repository
+      uses: actions/checkout@v6
+
+    - name: 🛠️ Setup cabal-fmt
+      uses: jorisdral/actions/setup-cabal-fmt@cabal-fmt-v0
+      with:
+        cabal-fmt-version: "0.1.12"
+        ghc-version: "9.6"
+        cabal-version: "3.16"
+        # The index-state is fixed to enable caching and ensure that the version
+        # regardless of the current state of Hackage head.
+        # If you want a newer version of cabal-fmt, use a more recent time.
+        hackage-index-state: "2026-03-02T00:00:00Z"
+
+    - name: 🎗️ Lint with cabal-fmt
+      run: ./scripts/format-cabal-fmt.sh && git diff --exit-code
+
+  ################################################################################
+  # Lint with stylish-haskell
+  ################################################################################
+  lint-stylish-haskell:
+    name: Lint with stylish-haskell
+    runs-on: ubuntu-latest
+    steps:
+    - name: 📥 Checkout repository
+      uses: actions/checkout@v6
+
+    - name: 🛠️ Setup stylish-haskell
+      uses: jorisdral/actions/setup-stylish-haskell@stylish-haskell-v0
+      with:
+        stylish-haskell-version: "0.15.1.0"
+        ghc-version: "9.10"
+        cabal-version: "3.16"
+        # The index-state is fixed to enable caching and ensure that the version
+        # regardless of the current state of Hackage head.
+        # If you want a newer version of stylish-haskell, use a more recent time.
+        hackage-index-state: "2026-03-02T00:00:00Z"
+
+    - name: 🎗️ Lint with stylish-haskell
+      run: ./scripts/format-stylish-haskell.sh && git diff --exit-code
